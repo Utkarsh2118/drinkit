@@ -163,6 +163,42 @@ class DatabaseManager {
             }
           }
 
+          // Sync category image URLs from seed data
+const seedCategoryMap = new Map(
+  SEED_CATEGORIES.map(category => [category.id, category])
+);
+
+parsed.categories = (parsed.categories || []).map((existingCategory: Category) => {
+  const seedCategory = seedCategoryMap.get(existingCategory.id);
+
+  if (seedCategory?.imageUrl) {
+    return {
+      ...existingCategory,
+      imageUrl: seedCategory.imageUrl,
+    };
+  }
+
+  return existingCategory;
+});
+
+// Sync product image URLs from seed data
+const seedProductMap = new Map(
+  SEED_PRODUCTS.map(product => [product.id, product])
+);
+
+parsed.products = (parsed.products || []).map((existingProduct: Product) => {
+  const seedProduct = seedProductMap.get(existingProduct.id);
+
+  if (seedProduct?.imageUrl) {
+    return {
+      ...existingProduct,
+      imageUrl: seedProduct.imageUrl,
+    };
+  }
+
+  return existingProduct;
+});
+
           // Ensure delivery zones are synced
           const existingZoneIds = new Set((parsed.deliveryZones || []).map((z: any) => z.id));
           for (const sz of SEED_DELIVERY_ZONES) {
