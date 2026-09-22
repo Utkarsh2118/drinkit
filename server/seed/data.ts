@@ -308,7 +308,7 @@ export const SEED_PRODUCTS: Product[] = [
     isAlcoholic: true,
     description: 'Golden pale lager with a refreshing, crisp taste and a smooth finish. Best enjoyed ice-cold with a wedge of lime.',
     tastingNotes: ['Crisp malt', 'Subtle sweetness', 'Clean finish'],
-    imageUrl: 'https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=600&auto=format&fit=crop&q=80',
+    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSONTwPDD_MHZXHehN53eEOZhHWywAwpsTDKd69_QYa1w&s=10',
     country: 'Mexico',
     isBestseller: true,
     isFeatured: true,
