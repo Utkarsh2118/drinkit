@@ -1,0 +1,6 @@
+{
+  "name": "DrinkIt",
+  "description": "Quick-commerce alcohol and beverage delivery platform with location-first discovery, compliance verification, real-time inventory, and multi-role operations.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
