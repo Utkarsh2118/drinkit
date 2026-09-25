@@ -41,7 +41,7 @@ export class ComplianceService {
     const settings = db.getComplianceSettings();
     const age = this.calculateAge(dobString);
     const minAge = settings.legalDrinkingAge || 21;
-    const jurisdiction = requestedJurisdiction || settings.jurisdiction || 'Karnataka, India';
+    const jurisdiction = requestedJurisdiction || settings.jurisdiction || 'UP + Delhi NCR';
 
     if (age < minAge) {
       return {
