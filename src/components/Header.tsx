@@ -584,25 +584,14 @@ export const Header: React.FC<HeaderProps> = ({
                 setActiveView('home');
                 setQuery('');
               }}
-              className="flex items-center gap-2 group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-xl"
+              className="flex items-center group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-xl shrink-0"
               title="DrinkIt - 20 Min Drink Delivery"
             >
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black shadow-xs group-hover:bg-emerald-700 transition-colors shrink-0">
-                <Zap className="w-5 h-5 fill-white stroke-white" />
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5 leading-none">
-                  <span className="font-black text-xl tracking-tight text-slate-900 font-sans">
-                    DrinkIt
-                  </span>
-                  <span className="text-[10px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    ⚡ 20 MIN
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-500 font-semibold hidden md:inline leading-tight mt-0.5">
-                  Chilled. Certified. Instant.
-                </span>
-              </div>
+              <img
+                src="/images/drinkit-logo.svg"
+                alt="DrinkIt - Liquor Delivery"
+                className="w-20 h-14 sm:w-24 sm:h-16 object-contain object-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200"
+              />
             </button>
 
             {/* Prominent Location Selector */}
