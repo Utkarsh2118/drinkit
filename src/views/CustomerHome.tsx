@@ -111,7 +111,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   // Load categories
   useEffect(() => {
     api
-      .get<Category[]>('/products/categories')
+      .get<Category[]>(`/products/categories?storeId=${activeStore?.id || 'store_noida_sec18'}`)
       .then(cats => setCategories(cats))
       .catch(() => {});
   }, []);
