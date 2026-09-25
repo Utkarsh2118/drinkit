@@ -5,12 +5,18 @@ const router = Router();
 
 // GET all categories
 router.get('/categories', (req, res) => {
+  const storeId = String(req.query.storeId || 'store_noida_sec18');
+  const store = db.getStores().find(s => s.id === storeId);
   const categories = db.getCategories();
   const products = db.getProducts();
 
   const enriched = categories.map(cat => ({
     ...cat,
-    itemCount: products.filter(p => p.categoryId === cat.id && p.isActive).length,
+    itemCount: products.filter(p => {
+      if (!p.isActive || p.categoryId !== cat.id) return false;
+      if (store && p.availableStates?.length && !p.availableStates.includes(store.state)) return false;
+      return db.getInventory().some(i => i.storeId === storeId && i.productId === p.id);
+    }).length,
   }));
 
   res.json({ success: true, data: enriched });
