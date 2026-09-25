@@ -33,22 +33,32 @@ router.post('/calculate-totals', (req, res) => {
       continue;
     }
 
-    const stock = db.getStoreStock(targetStoreId, prod.id);
+    const variant = item.variantId ? prod.variants?.find(v => v.id === item.variantId && v.isActive) : undefined;
+    if (item.variantId && !variant) {
+      stockIssues.push(`Variant ${item.variantId} is not available for "${prod.name}".`);
+      continue;
+    }
+    const stock = db.getStoreStock(targetStoreId, prod.id, item.variantId);
     if (stock.available < item.quantity) {
       stockIssues.push(`"${prod.name}" only has ${stock.available} available in stock.`);
     }
 
-    const itemSubtotal = prod.price * item.quantity;
+    const unitPrice = variant?.price ?? prod.price;
+    const volume = variant?.volume ?? prod.volume;
+    const itemSubtotal = unitPrice * item.quantity;
     subtotal += itemSubtotal;
 
     verifiedItems.push({
       productId: prod.id,
       productName: prod.name,
       productImage: prod.imageUrl,
-      volume: prod.volume,
-      price: prod.price,
+      volume,
+      price: unitPrice,
       quantity: item.quantity,
       subtotal: itemSubtotal,
+      variantId: variant?.id,
+      variantName: variant?.name,
+      variantSku: variant?.sku,
     });
   }
 
@@ -153,7 +163,21 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     return res.status(400).json({ success: false, message: 'Delivery address is required' });
   }
 
-  const targetStore = db.getStores().find(s => s.id === storeId) || db.getStores()[0];
+  const targetStore = db.getStores().find(s => s.id === storeId);
+  if (!targetStore || !targetStore.isActive || !targetStore.deliveryEnabled) {
+    return res.status(400).json({ success: false, message: 'Selected store is unavailable for delivery.' });
+  }
+  const matchedZone = db.getDeliveryZones().find(z => z.associatedStoreId === targetStore.id && z.isActive && z.postalCodes.includes(String(deliveryAddress.postalCode || '')));
+  if (!matchedZone) {
+    return res.status(400).json({ success: false, message: 'Delivery address is not serviceable by the selected store.', errorCode: 'STORE_SERVICEABILITY_FAILED' });
+  }
+  const jurisdictionMinAge = targetStore.state === 'Delhi' ? 25 : 21;
+  if (user.dateOfBirth) {
+    const actualAge = ComplianceService.calculateAge(user.dateOfBirth);
+    if (items.some((i: any) => db.findProductById(i.productId)?.isAlcoholic) && actualAge < jurisdictionMinAge) {
+      return res.status(403).json({ success: false, message: `Alcohol orders for this delivery jurisdiction require the configured minimum age of ${jurisdictionMinAge}.`, errorCode: 'JURISDICTION_AGE_RESTRICTION' });
+    }
+  }
 
   // 3. Atomically check and reserve inventory
   const reserveSuccess = db.reserveInventory(targetStore.id, items);
@@ -173,16 +197,23 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   for (const item of items) {
     const prod = products.find(p => p.id === item.productId);
     if (prod) {
-      const lineSubtotal = prod.price * item.quantity;
+      const variant = item.variantId ? prod.variants?.find(v => v.id === item.variantId && v.isActive) : undefined;
+      if (item.variantId && !variant) continue;
+      const unitPrice = variant?.price ?? prod.price;
+      const volume = variant?.volume ?? prod.volume;
+      const lineSubtotal = unitPrice * item.quantity;
       subtotal += lineSubtotal;
       orderItems.push({
         productId: prod.id,
         productName: prod.name,
         productImage: prod.imageUrl,
-        volume: prod.volume,
-        price: prod.price,
+        volume,
+        price: unitPrice,
         quantity: item.quantity,
         subtotal: lineSubtotal,
+        variantId: variant?.id,
+        variantName: variant?.name,
+        variantSku: variant?.sku,
       });
     }
   }
