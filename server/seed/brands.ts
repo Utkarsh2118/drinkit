@@ -16,4 +16,5 @@ export const SEED_BRANDS: Brand[] = [
   { id: 'b_kurkure', name: 'Kurkure', slug: 'kurkure', countryOfOrigin: 'India', logoUrl: '', description: 'Indian snack brand.' },
   { id: 'b_pringles', name: 'Pringles', slug: 'pringles', countryOfOrigin: 'Malaysia', logoUrl: '', description: 'Stacked potato crisps brand.' },
   { id: 'b_homeone', name: 'Home One', slug: 'home-one', countryOfOrigin: 'India', logoUrl: '', description: 'Paper napkins and household disposables.' },
+  { id: 'b_origami', name: 'Origami', slug: 'origami', countryOfOrigin: 'India', logoUrl: '', description: 'Paper products and disposable party essentials.' },
 ];
