@@ -213,7 +213,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
             (p.categoryId === 'cat_mixers' ||
               p.categoryId === 'cat_snacks' ||
               p.categoryId === 'cat_softdrinks' ||
-              p.categoryId.startsWith('cat_party') &&
+              p.categoryId.startsWith('cat_party')) &&
             p.isActive
         )
         .slice(0, 10),
