@@ -348,7 +348,7 @@ export const ProfileView: React.FC = () => {
 
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                {user.isAgeVerified ? `Age Verified (${user.age || 21}+) in Karnataka` : 'Age Unverified'}
+                {user.isAgeVerified ? `Age Verified (${user.age || 21}+) in active jurisdiction` : 'Age Unverified'}
               </span>
 
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-medium">
