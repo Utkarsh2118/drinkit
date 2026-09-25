@@ -220,7 +220,7 @@ router.get('/', (req, res) => {
   products = products.filter(product => {
     const stateAllowed = !product.availableStates?.length || product.availableStates.includes(targetStore.state);
     const stock = db.getStoreStock(targetStoreId, product.id);
-    return stateAllowed && stock.exists;
+    return stateAllowed && db.getInventory().some(i => i.storeId === targetStoreId && i.productId === product.id);
   });
   const enrichedProducts = products.map(product => {
     const stockInfo = db.getStoreStock(targetStoreId, product.id);
@@ -282,7 +282,7 @@ router.get('/:id', (req, res) => {
       if (!p.isActive) return false;
       if (!(p.categoryId === 'cat_mixers' || p.categoryId === 'cat_snacks' || p.categoryId.startsWith('cat_party'))) return false;
       const pairingStock = db.getStoreStock(storeId, p.id);
-      return pairingStock.exists && pairingStock.available > 0;
+      return db.getInventory().some(i => i.storeId === storeId && i.productId === p.id) && pairingStock.available > 0;
     })
     .slice(0, 6);
 
