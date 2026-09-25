@@ -480,7 +480,7 @@ export const AdminDashboardView: React.FC = () => {
                   }
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
                 />
-                <span className="text-[10px] text-slate-400 mt-1 block">Aggregate spirit & beer transport ceiling (9.0L in Karnataka)</span>
+                <span className="text-[10px] text-slate-400 mt-1 block">Aggregate alcohol quantity limits are jurisdiction-configurable.</span>
               </div>
             </div>
 
