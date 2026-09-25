@@ -29,7 +29,7 @@ export const ResponsibleBanner: React.FC = () => {
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-200 shrink-0 animate-pulse" />
             <span>
-              <strong>STATUTORY DRY DAY:</strong> Alcohol sales & dispatch paused today across Karnataka (
+              <strong>STATUTORY DRY DAY:</strong> Alcohol sales & dispatch paused in the active jurisdiction (
               {compliance.dryDayReason || 'Excise Order'}). Non-alcoholic beverages & bar snacks remain open.
             </span>
           </div>
@@ -64,7 +64,7 @@ export const ResponsibleBanner: React.FC = () => {
           )}
           <span className="flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 text-emerald-600" />
-            <span>Lic: {compliance?.exciseLicenseNumber || 'KA-EXC-2026-RET-8842'}</span>
+            <span>Lic: {compliance?.exciseLicenseNumber || 'CONFIGURE_PER_LICENSED_STORE'}</span>
           </span>
           <span className="text-slate-400 font-bold">•</span>
           <span className="text-emerald-800 font-bold uppercase tracking-wider">

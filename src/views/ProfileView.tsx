@@ -348,7 +348,7 @@ export const ProfileView: React.FC = () => {
 
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                {user.isAgeVerified ? `Age Verified (${user.age || 21}+) in Karnataka` : 'Age Unverified'}
+                {user.isAgeVerified ? `Age Verified (${user.age || 21}+) in active jurisdiction` : 'Age Unverified'}
               </span>
 
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-medium">
@@ -577,7 +577,7 @@ export const ProfileView: React.FC = () => {
               {user.isAgeVerified ? `DOB: ${user.dateOfBirth || '1997-03-24'} (${user.age || 29} Years Old)` : 'Pending'}
             </p>
             <p className="text-[11px] text-slate-500">
-              Verified for Karnataka Legal Age Limit (21+). Verified at delivery handover via government photo ID.
+              Verified for the active jurisdiction's configured legal age. Verified at delivery handover via government photo ID.
             </p>
           </div>
 

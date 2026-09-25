@@ -110,9 +110,9 @@ export const locationService = {
       return {
         label: `Location (${latitude.toFixed(3)}, ${longitude.toFixed(3)})`,
         addressLine: `Coordinates: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        postalCode: '560038',
+        city: '',
+        state: '',
+        postalCode: '',
         latitude,
         longitude,
         formattedAddress: `Lat: ${latitude.toFixed(5)}, Lon: ${longitude.toFixed(5)}`,

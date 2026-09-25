@@ -179,7 +179,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY_LOC);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed.state !== 'Karnataka' && parsed.city !== 'Bengaluru' && parsed.postalCode !== '560038') {
+        if (parsed.state && parsed.city && parsed.postalCode) {
           return parsed;
         }
       }

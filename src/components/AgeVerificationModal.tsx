@@ -29,7 +29,7 @@ export const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({ isOp
   if (!isOpen) return null;
 
   const minAge = compliance?.legalDrinkingAge || 21;
-  const jurisdiction = compliance?.jurisdiction || 'Karnataka, India';
+  const jurisdiction = compliance?.jurisdiction || 'UP + Delhi NCR';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

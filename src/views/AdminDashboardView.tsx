@@ -423,7 +423,7 @@ export const AdminDashboardView: React.FC = () => {
                     setCompliance({ ...compliance, jurisdiction: e.target.value })
                   }
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
-                  placeholder="e.g. Karnataka, India (State Excise Act)"
+                  placeholder="e.g. Uttar Pradesh / Delhi — State Excise"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">Displayed on tax invoices & statutory declarations</span>
               </div>
@@ -442,7 +442,7 @@ export const AdminDashboardView: React.FC = () => {
                   }
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
                 />
-                <span className="text-[10px] text-slate-400 mt-1 block">21 in Karnataka/Goa; 25 in Delhi/Maharashtra</span>
+                <span className="text-[10px] text-slate-400 mt-1 block">Example: Delhi has a 25+ statutory threshold; keep jurisdiction settings configurable.</span>
               </div>
             </div>
 
@@ -480,7 +480,7 @@ export const AdminDashboardView: React.FC = () => {
                   }
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
                 />
-                <span className="text-[10px] text-slate-400 mt-1 block">Aggregate spirit & beer transport ceiling (9.0L in Karnataka)</span>
+                <span className="text-[10px] text-slate-400 mt-1 block">Aggregate alcohol quantity limits are jurisdiction-configurable.</span>
               </div>
             </div>
 
@@ -607,7 +607,7 @@ export const AdminDashboardView: React.FC = () => {
                   value={compliance.exciseLicenseNumber || ''}
                   onChange={e => setCompliance({ ...compliance, exciseLicenseNumber: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-semibold"
-                  placeholder="KA-EXC-2026-RET-8842"
+                  placeholder="Configure per licensed store"
                 />
               </div>
               <div>

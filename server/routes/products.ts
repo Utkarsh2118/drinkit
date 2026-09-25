@@ -5,12 +5,18 @@ const router = Router();
 
 // GET all categories
 router.get('/categories', (req, res) => {
+  const storeId = String(req.query.storeId || 'store_noida_sec18');
+  const store = db.getStores().find(s => s.id === storeId);
   const categories = db.getCategories();
   const products = db.getProducts();
 
   const enriched = categories.map(cat => ({
     ...cat,
-    itemCount: products.filter(p => p.categoryId === cat.id && p.isActive).length,
+    itemCount: products.filter(p => {
+      if (!p.isActive || p.categoryId !== cat.id) return false;
+      if (store && p.availableStates?.length && !p.availableStates.includes(store.state)) return false;
+      return db.getInventory().some(i => i.storeId === storeId && i.productId === p.id);
+    }).length,
   }));
 
   res.json({ success: true, data: enriched });
@@ -72,6 +78,8 @@ router.get('/suggestions', (req, res) => {
         p.brandName.toLowerCase().includes(q) ||
         p.categoryName?.toLowerCase().includes(q) ||
         p.subcategory?.toLowerCase().includes(q) ||
+        p.volume?.toLowerCase().includes(q) ||
+        p.variants?.some(v => v.volume.toLowerCase().includes(q) || v.name.toLowerCase().includes(q)) ||
         p.tastingNotes?.some(t => t.toLowerCase().includes(q))
     )
     .slice(0, 6)
@@ -133,6 +141,8 @@ router.get('/', (req, res) => {
     storeId,
     minPrice,
     maxPrice,
+    minRating,
+    availableOnly,
     isAlcoholic,
     bestsellersOnly,
     featuredOnly,
@@ -153,6 +163,8 @@ router.get('/', (req, res) => {
         p.brandName.toLowerCase().includes(term) ||
         p.categoryName.toLowerCase().includes(term) ||
         p.subcategory.toLowerCase().includes(term) ||
+        p.volume.toLowerCase().includes(term) ||
+        p.variants?.some(v => v.volume.toLowerCase().includes(term) || v.name.toLowerCase().includes(term)) ||
         p.tastingNotes.some(t => t.toLowerCase().includes(term))
     );
   }
@@ -186,6 +198,14 @@ router.get('/', (req, res) => {
     products = products.filter(p => p.price <= Number(maxPrice));
   }
 
+  // Rating / availability filters
+  if (minRating) {
+    products = products.filter(p => p.rating >= Number(minRating));
+  }
+  if (availableOnly === 'true') {
+    products = products.filter(p => p.isActive);
+  }
+
   // Flags
   if (bestsellersOnly === 'true') {
     products = products.filter(p => p.isBestseller);
@@ -197,8 +217,17 @@ router.get('/', (req, res) => {
     products = products.filter(p => p.isNewArrival);
   }
 
-  // Attach store stock if storeId is provided
+  // Attach authoritative store stock and hide products not catalogued for the selected store.
   const targetStoreId = String(storeId || 'store_noida_sec18');
+  const targetStore = db.getStores().find(s => s.id === targetStoreId);
+  if (!targetStore) {
+    return res.status(400).json({ success: false, message: 'Invalid store selection' });
+  }
+  products = products.filter(product => {
+    const stateAllowed = !product.availableStates?.length || product.availableStates.includes(targetStore.state);
+    const stock = db.getStoreStock(targetStoreId, product.id);
+    return stateAllowed && db.getInventory().some(i => i.storeId === targetStoreId && i.productId === product.id);
+  });
   const enrichedProducts = products.map(product => {
     const stockInfo = db.getStoreStock(targetStoreId, product.id);
     return {
@@ -255,8 +284,13 @@ router.get('/:id', (req, res) => {
   // Suggested pairings (mixers, snacks, ice)
   const pairings = db
     .getProducts()
-    .filter(p => p.isActive && (p.categoryId === 'cat_mixers' || p.categoryId === 'cat_snacks' || p.categoryId === 'cat_party'))
-    .slice(0, 4);
+    .filter(p => {
+      if (!p.isActive) return false;
+      if (!(p.categoryId === 'cat_mixers' || p.categoryId === 'cat_snacks' || p.categoryId.startsWith('cat_party'))) return false;
+      const pairingStock = db.getStoreStock(storeId, p.id);
+      return db.getInventory().some(i => i.storeId === storeId && i.productId === p.id) && pairingStock.available > 0;
+    })
+    .slice(0, 6);
 
   res.json({
     success: true,

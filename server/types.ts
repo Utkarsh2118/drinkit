@@ -137,6 +137,26 @@ export interface Product {
   inStock?: boolean;
   tags?: string[];
   variants?: ProductVariant[];
+  imageSource?: string;
+  imageVerified?: boolean;
+  imageVerifiedAt?: string;
+  priceSource?: string;
+  priceVerified?: boolean;
+  priceVerifiedAt?: string;
+  availableStates?: string[];
+  regionalPrices?: RegionalPrice[];
+}
+
+export interface RegionalPrice {
+  market: string;
+  state?: string;
+  price: number;
+  mrp?: number;
+  currency: string;
+  source: string;
+  sourceType: 'official' | 'licensed_retailer' | 'authorized_distributor' | 'secondary_aggregator' | 'development';
+  verified: boolean;
+  verifiedAt: string;
 }
 
 export interface Store {

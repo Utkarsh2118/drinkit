@@ -56,6 +56,7 @@ export interface DatabaseSchema {
   invoiceSequence: number;
   supportTickets?: SupportTicket[];
   revokedTokens?: string[];
+  catalogueVersion?: number;
 }
 
 class DatabaseManager {
@@ -117,28 +118,37 @@ class DatabaseManager {
           parsed.wishlists = parsed.wishlists || {};
           parsed.supportTickets = parsed.supportTickets || [];
           parsed.revokedTokens = parsed.revokedTokens || [];
+          parsed.catalogueVersion = parsed.catalogueVersion || 0;
 
           // Migrate stores, zones, compliance, and products to UP + Delhi NCR if previous data had old regions
-          const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru');
-          if (hasOldStores || !parsed.stores || parsed.stores.length === 0) {
+          const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru' || s.state === 'Karnataka');
+          const needsCatalogueV3 = parsed.catalogueVersion < 3 || hasOldStores || !parsed.stores || parsed.stores.length === 0;
+          if (needsCatalogueV3) {
             parsed.stores = SEED_STORES;
             parsed.deliveryZones = SEED_DELIVERY_ZONES;
             parsed.complianceSettings = SEED_COMPLIANCE_SETTINGS;
             parsed.categories = SEED_CATEGORIES;
             parsed.brands = SEED_BRANDS;
             parsed.products = SEED_PRODUCTS;
-            // Re-generate store inventory for UP & Delhi stores
+            parsed.catalogueVersion = 3;
+            // Re-generate store inventory with deliberate store-specific catalogue differences.
             parsed.inventory = [];
             for (const store of SEED_STORES) {
               for (const product of SEED_PRODUCTS) {
-                const baseStock = product.isBestseller ? 35 : 20;
-                const stockOffset = (store.code.charCodeAt(store.code.length - 1) % 5) * 3;
+                const stateAllowed = !product.availableStates?.length || product.availableStates.includes(store.state);
+                const productIndex = SEED_PRODUCTS.findIndex(p => p.id === product.id);
+                const storeIndex = SEED_STORES.findIndex(s => s.id === store.id);
+                const selectiveAvailability = ((productIndex + storeIndex) % 5) !== 4;
+                if (!stateAllowed || !selectiveAvailability || !product.isActive) continue;
+                const baseStock = product.isBestseller ? 24 : 12;
+                const stockOffset = ((storeIndex + productIndex) % 4) * 4;
                 parsed.inventory.push({
                   id: `inv_${store.id}_${product.id}`,
                   storeId: store.id,
                   productId: product.id,
-                  quantity: Math.max(5, baseStock + stockOffset),
+                  quantity: baseStock + stockOffset,
                   reservedQuantity: 0,
+                  availableQuantity: baseStock + stockOffset,
                   lowStockThreshold: 5,
                   updatedAt: new Date().toISOString(),
                 });
@@ -226,6 +236,9 @@ class DatabaseManager {
             }
           }
 
+          // Keep the regional catalogue version authoritative after migration.
+          parsed.catalogueVersion = 3;
+
           // Ensure stores list has all configured stores
           const existingStoreIds = new Set((parsed.stores || []).map((s: any) => s.id));
           for (const ss of SEED_STORES) {
@@ -233,12 +246,15 @@ class DatabaseManager {
               parsed.stores.push(ss);
               // Initialize inventory for new store
               for (const prod of (parsed.products || [])) {
+                const stateAllowed = !prod.availableStates?.length || prod.availableStates.includes(ss.state);
+                if (!stateAllowed || !prod.isActive) continue;
                 parsed.inventory.push({
                   id: `inv_${ss.id}_${prod.id}`,
                   storeId: ss.id,
                   productId: prod.id,
-                  quantity: 30,
+                  quantity: 15,
                   reservedQuantity: 0,
+                  availableQuantity: 15,
                   lowStockThreshold: 5,
                   updatedAt: new Date().toISOString(),
                 });
@@ -430,19 +446,24 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
   }
 
   private createSeedData(): DatabaseSchema {
-    // Generate store inventories for each store and product
+    // Generate deliberately store-specific inventories; no universal availability.
     const inventory: StoreInventoryItem[] = [];
     for (const store of SEED_STORES) {
+      const storeIndex = SEED_STORES.findIndex(s => s.id === store.id);
       for (const product of SEED_PRODUCTS) {
-        // Vary stock naturally by store
-        const baseStock = product.isBestseller ? 35 : 20;
-        const stockOffset = (store.code.charCodeAt(store.code.length - 1) % 5) * 3;
+        const stateAllowed = !product.availableStates?.length || product.availableStates.includes(store.state);
+        const productIndex = SEED_PRODUCTS.findIndex(p => p.id === product.id);
+        const selectiveAvailability = ((productIndex + storeIndex) % 5) !== 4;
+        if (!stateAllowed || !selectiveAvailability || !product.isActive) continue;
+        const baseStock = product.isBestseller ? 24 : 12;
+        const stockOffset = ((storeIndex + productIndex) % 4) * 4;
         inventory.push({
           id: `inv_${store.id}_${product.id}`,
           storeId: store.id,
           productId: product.id,
-          quantity: Math.max(5, baseStock + stockOffset),
+          quantity: baseStock + stockOffset,
           reservedQuantity: 0,
+          availableQuantity: baseStock + stockOffset,
           lowStockThreshold: 5,
           updatedAt: new Date().toISOString(),
         });
@@ -463,41 +484,40 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         deliveryAddress: SEED_USERS[3].addresses[0],
         items: [
           {
-            productId: 'prod_jw_black',
-            productName: 'Johnnie Walker Black Label 12 Year Old',
-            productImage: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600&auto=format&fit=crop&q=80',
+            productId: 'prod_royal_stag_deluxe',
+            productName: 'Royal Stag Deluxe Whisky',
+            productImage: 'https://www.bswliquor.com/cdn/shop/products/royal_stag_deluxe.png?v=1753126462&width=2400',
             volume: '750 ml',
-            price: 3350,
+            price: 675,
             quantity: 1,
-            subtotal: 3350,
+            subtotal: 675,
           },
           {
-            productId: 'prod_schweppes_gingerale',
-            productName: 'Schweppes Sparkling Ginger Ale',
-            productImage: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80',
-            volume: '300 ml Can',
-            price: 60,
+            productId: 'prod_redbull_250',
+            productName: 'Red Bull Energy Drink',
+            productImage: 'https://image.aapkabazar.co/product/401/1697090583516.png?type=png',
+            volume: '250 ml',
+            price: 125,
             quantity: 2,
-            subtotal: 120,
+            subtotal: 250,
           },
           {
-            productId: 'prod_drinkit_ice_1kg',
-            name: 'DrinkIt Pure Food-Grade Crystal Ice Cubes (1 kg)',
-            productName: 'DrinkIt Pure Food-Grade Crystal Ice Cubes (1 kg)',
-            productImage: 'https://images.unsplash.com/photo-1574096079513-d8259312b785?w=600&auto=format&fit=crop&q=80',
-            volume: '1 kg Pack',
-            price: 60,
+            productId: 'prod_bisleri_1l',
+            productName: 'Bisleri Packaged Drinking Water',
+            productImage: 'https://prithvienterprises.co.in/cdn/shop/files/sliding_images_jpeg_10b8b01a_8b71_4448_becb_16d4247ef05cjpgts1707312326_c0082670-b46c-4a72-80a6-9ac911e3b778.jpg?v=1746382045',
+            volume: '1 L',
+            price: 20,
             quantity: 1,
-            subtotal: 60,
+            subtotal: 20,
           }
         ],
-        subtotal: 3530,
-        discount: 100,
-        couponCode: 'CHEERS100',
-        deliveryFee: 0,
+        subtotal: 945,
+        discount: 0,
+        couponCode: undefined,
+        deliveryFee: 35,
         handlingFee: 15,
-        taxes: 175,
-        totalAmount: 3620,
+        taxes: 47,
+        totalAmount: 1042,
         paymentMethod: 'upi',
         paymentStatus: 'completed',
         paymentId: 'pay_mock_9921',
@@ -531,7 +551,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         deliveryAddress: SEED_USERS[3].addresses[0],
         items: [
           {
-            productId: 'prod_kf_premium',
+            productId: 'prod_kingfisher_premium',
             productName: 'Kingfisher Premium Lager Beer',
             productImage: 'https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=600&auto=format&fit=crop&q=80',
             volume: '650 ml Bottle',
@@ -540,7 +560,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
             subtotal: 420,
           },
           {
-            productId: 'prod_haldiram_aloo_bhujia',
+            productId: 'prod_haldiram_aloo_bhujia_200',
             productName: "Haldiram's Nagpur Spicy Aloo Bhujia",
             productImage: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
             volume: '200g Pack',
@@ -583,7 +603,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
     const demoReviews: Review[] = [
       {
         id: 'rev_1',
-        productId: 'prod_jw_black',
+        productId: 'prod_royal_stag_deluxe',
         userId: 'usr_customer',
         userName: 'Pooja Nair',
         rating: 5,
@@ -596,7 +616,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
       },
       {
         id: 'rev_2',
-        productId: 'prod_corona_extra_6pk',
+        productId: 'prod_budweiser_magnum',
         userId: 'usr_customer',
         userName: 'Karan M.',
         rating: 5,
