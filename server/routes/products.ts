@@ -197,7 +197,7 @@ router.get('/', (req, res) => {
     products = products.filter(p => p.rating >= Number(minRating));
   }
   if (availableOnly === 'true') {
-    products = products.filter(p => p.inStock !== false);
+    products = products.filter(p => p.isActive);
   }
 
   // Flags
