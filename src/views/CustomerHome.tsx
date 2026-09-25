@@ -37,96 +37,23 @@ interface CategoryMeta {
 }
 
 const QUICK_COMMERCE_CATEGORIES: CategoryMeta[] = [
-  {
-    id: 'all',
-    name: 'All Drinks',
-    shortName: 'All Drinks',
-    imageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_whisky',
-    name: 'Whisky',
-    shortName: 'Whisky',
-    imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_beer',
-    name: 'Beer & Ciders',
-    shortName: 'Beer',
-    imageUrl: 'https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_wine',
-    name: 'Wine',
-    shortName: 'Wine',
-    imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_vodka',
-    name: 'Vodka',
-    shortName: 'Vodka',
-    imageUrl: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_gin',
-    name: 'Gin',
-    shortName: 'Gin',
-    imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_rum',
-    name: 'Rum',
-    shortName: 'Rum',
-    imageUrl: 'https://images.unsplash.com/photo-1614313511387-1436a4480ebb?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_tequila',
-    name: 'Tequila & Mezcal',
-    shortName: 'Tequila',
-    imageUrl: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_brandy',
-    name: 'Brandy & Cognac',
-    shortName: 'Brandy',
-    imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_champagne',
-    name: 'Champagne',
-    shortName: 'Champagne',
-    imageUrl: 'https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_liqueurs',
-    name: 'Liqueurs',
-    shortName: 'Liqueurs',
-    imageUrl: 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_mixers',
-    name: 'Mixers & Tonics',
-    shortName: 'Mixers',
-    imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_softdrinks',
-    name: 'Soft Drinks',
-    shortName: 'Soft Drinks',
-    imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_snacks',
-    name: 'Bar Snacks & Munchies',
-    shortName: 'Snacks',
-    imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 'cat_party',
-    name: 'Party Essentials',
-    shortName: 'Party',
-    imageUrl: 'https://images.unsplash.com/photo-1574096079513-d8259312b785?w=200&auto=format&fit=crop&q=80',
-  },
+  { id: 'all', name: 'Everything', shortName: 'All', imageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=200&auto=format&fit=crop&q=80' },
+  { id: 'cat_whisky', name: 'Whisky', shortName: 'Whisky', imageUrl: 'https://www.bswliquor.com/cdn/shop/products/royal_stag_deluxe.png?v=1753126462&width=800' },
+  { id: 'cat_beer', name: 'Beer', shortName: 'Beer', imageUrl: 'https://sipdirect-prod1.s3.ap-south-1.amazonaws.com/images/Category-Images2/Beer/Lager/Kingfisher-Premium-Lager-Beer-650mL_front.webp' },
+  { id: 'cat_vodka', name: 'Vodka', shortName: 'Vodka', imageUrl: 'https://chalosgrocery.com/assets/uploads/402ee7f71d732f2947e476500fbb2f36.png' },
+  { id: 'cat_rum', name: 'Rum', shortName: 'Rum', imageUrl: 'https://onlineliquornepal.com/wp-content/uploads/2021/01/Old-Monk-XXX-Rum.jpg' },
+  { id: 'cat_gin', name: 'Gin', shortName: 'Gin', imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=200&auto=format&fit=crop&q=80' },
+  { id: 'cat_wine', name: 'Wine', shortName: 'Wine', imageUrl: 'https://www.paulsliquor.com.au/cdn/shop/files/uNFtt2AyTOmKN5clpaSOBA_pb_600x600_7285965b-e94c-44f6-9ff6-d749725d1a19.png?v=1735615011' },
+  { id: 'cat_mixers', name: 'Soda & Mixers', shortName: 'Mixers', imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200&auto=format&fit=crop&q=80' },
+  { id: 'cat_water', name: 'Water', shortName: 'Water', imageUrl: 'https://prithvienterprises.co.in/cdn/shop/files/sliding_images_jpeg_10b8b01a_8b71_4448_becb_16d4247ef05cjpgts1707312326_c0082670-b46c-4a72-80a6-9ac911e3b778.jpg?v=1746382045' },
+  { id: 'cat_softdrinks', name: 'Soft Drinks', shortName: 'Soft Drinks', imageUrl: 'https://bazaar5.com/image/cache/catalog/pro/product/apiData/251023-coca-cola-soft-drink-750-ml-0-1000x1000.jpg' },
+  { id: 'cat_energy', name: 'Energy Drinks', shortName: 'Energy', imageUrl: 'https://image.aapkabazar.co/product/401/1697090583516.png?type=png' },
+  { id: 'cat_juices', name: 'Juices', shortName: 'Juices', imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&auto=format&fit=crop&q=80' },
+  { id: 'cat_snacks', name: 'Chips & Namkeen', shortName: 'Snacks', imageUrl: 'https://www.pankaj-boutique.com/31477-large_default/namkeen-indian-aloo-bhujia.jpg' },
+  { id: 'cat_party_glasses', name: 'Disposable Glasses', shortName: 'Glasses', imageUrl: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&auto=format&fit=crop&q=80' },
+  { id: 'cat_party_plates', name: 'Disposable Plates', shortName: 'Plates', imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&auto=format&fit=crop&q=80' },
+  { id: 'cat_party_napkins', name: 'Napkins', shortName: 'Napkins', imageUrl: 'https://www.jiomart.com/images/product/original/491963192/home-one-paper-napkin-29-x-29-cm-100-pcs-product-images-o491963192-p590441807-0-202203170913.jpg?im=Resize%3D%281000%2C1000%29' },
+  { id: 'cat_party', name: 'Party Essentials', shortName: 'Party', imageUrl: 'https://images.unsplash.com/photo-1574096079513-d8259312b785?w=200&auto=format&fit=crop&q=80' },
 ];
 
 export const CustomerHome: React.FC<CustomerHomeProps> = ({
@@ -274,7 +201,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   const wineCollection = useMemo(
     () =>
       allProducts
-        .filter(p => (p.categoryId === 'cat_wine' || p.categoryId === 'cat_champagne') && p.isActive)
+        .filter(p => (p.categoryId === 'cat_wine' || p.categoryId === 'cat_sparkling') && p.isActive)
         .slice(0, 10),
     [allProducts]
   );
@@ -286,7 +213,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
             (p.categoryId === 'cat_mixers' ||
               p.categoryId === 'cat_snacks' ||
               p.categoryId === 'cat_softdrinks' ||
-              p.categoryId === 'cat_party') &&
+              p.categoryId.startsWith('cat_party') &&
             p.isActive
         )
         .slice(0, 10),
@@ -423,10 +350,10 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   <span>20-Min Chilled Delivery</span>
                 </div>
                 <h3 className="text-base xs:text-lg sm:text-2xl font-black leading-tight tracking-tight text-white font-sans">
-                  Weekend Party Starters
+                  Everything for the Party
                 </h3>
                 <p className="text-[11px] xs:text-xs sm:text-sm text-emerald-100/90 mt-1 font-medium line-clamp-2">
-                  Up to 20% OFF on chilled beers, single malts & craft tonics
+                  Browse live store inventory for beers, whisky, mixers, snacks and party essentials
                 </p>
               </div>
 
@@ -757,18 +684,10 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
         /* 5. HOMEPAGE PRODUCTS DOMINATE: 8 CONCISE PRODUCT RAILS   */
         /* ========================================================= */
         <div className="space-y-7 sm:space-y-9">
-          {/* RAIL 1: Chilled Beers (20 Min) */}
-          <ProductRail
-            id="rail-beers"
-            title="Chilled Beers (20 Min)"
-            subtitle="Cold beers & craft lagers in your neighbourhood"
-            badge="⚡ 20 MIN"
-            products={chilledBeers}
-            onSelectProduct={onSelectProduct}
-            onSeeAll={() => handleSelectCategory('cat_beer')}
-          />
+          {/* RAIL 1: Deals Near You */}
+          <ProductRail id="rail-deals" title="Deals Near You" subtitle="Products and prices available at your selected store" products={dealsNearYou} onSelectProduct={onSelectProduct} onSeeAll={() => handleSelectFilter('deals')} />
 
-          {/* RAIL 2: Best Sellers */}
+          {/* RAIL 2: Shop by Category / Best Sellers */}
           <ProductRail
             id="rail-bestsellers"
             title="Best Sellers"
@@ -780,15 +699,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           />
 
           {/* RAIL 3: Deals Near You */}
-          <ProductRail
-            id="rail-deals"
-            title="Deals Near You"
-            subtitle="Limited period offers & bundle discounts"
-            badge="SAVE BIG"
-            products={dealsNearYou}
-            onSelectProduct={onSelectProduct}
-            onSeeAll={() => handleSelectFilter('deals')}
-          />
+          <ProductRail id="rail-snacks" title="Snacks & Munchies" subtitle="Namkeen, chips and party snacks" products={allProducts.filter(p => p.categoryId === 'cat_snacks').slice(0, 10)} onSelectProduct={onSelectProduct} onSeeAll={() => handleSelectCategory('cat_snacks')} />
 
           {/* RAIL 4: Whisky & Single Malts */}
           <ProductRail
@@ -821,15 +732,9 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
           />
 
           {/* RAIL 7: Mixers & Party Munchies */}
-          <ProductRail
-            id="rail-mixers"
-            title="Mixers & Party Munchies"
-            subtitle="Artisanal tonics, soda, crisps & roasted nuts"
-            badge="ZERO ALCOHOL"
-            products={mixersAndSnacks}
-            onSelectProduct={onSelectProduct}
-            onSeeAll={() => handleSelectCategory('cat_mixers')}
-          />
+          <ProductRail id="rail-refreshments" title="Drinks & Refreshments" subtitle="Water, soft drinks, energy drinks and mixers" badge="ZERO ALCOHOL" products={mixersAndSnacks} onSelectProduct={onSelectProduct} onSeeAll={() => handleSelectCategory('cat_softdrinks')} />
+
+          <ProductRail id="rail-party" title="Party Essentials" subtitle="Glasses, plates, napkins and serving supplies" products={allProducts.filter(p => p.categoryId.startsWith('cat_party')).slice(0, 10)} onSelectProduct={onSelectProduct} onSeeAll={() => handleSelectCategory('cat_party')} />
 
           {/* RAIL 8: Buy Again */}
           <ProductRail
