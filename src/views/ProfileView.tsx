@@ -577,7 +577,7 @@ export const ProfileView: React.FC = () => {
               {user.isAgeVerified ? `DOB: ${user.dateOfBirth || '1997-03-24'} (${user.age || 29} Years Old)` : 'Pending'}
             </p>
             <p className="text-[11px] text-slate-500">
-              Verified for Karnataka Legal Age Limit (21+). Verified at delivery handover via government photo ID.
+              Verified for the active jurisdiction's configured legal age. Verified at delivery handover via government photo ID.
             </p>
           </div>
 
