@@ -423,7 +423,7 @@ export const AdminDashboardView: React.FC = () => {
                     setCompliance({ ...compliance, jurisdiction: e.target.value })
                   }
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
-                  placeholder="e.g. Karnataka, India (State Excise Act)"
+                  placeholder="e.g. Uttar Pradesh / Delhi — State Excise"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">Displayed on tax invoices & statutory declarations</span>
               </div>
