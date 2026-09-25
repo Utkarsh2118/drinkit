@@ -607,7 +607,7 @@ export const AdminDashboardView: React.FC = () => {
                   value={compliance.exciseLicenseNumber || ''}
                   onChange={e => setCompliance({ ...compliance, exciseLicenseNumber: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-semibold"
-                  placeholder="KA-EXC-2026-RET-8842"
+                  placeholder="Configure per licensed store"
                 />
               </div>
               <div>
