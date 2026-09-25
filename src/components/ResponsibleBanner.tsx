@@ -64,7 +64,7 @@ export const ResponsibleBanner: React.FC = () => {
           )}
           <span className="flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 text-emerald-600" />
-            <span>Lic: {compliance?.exciseLicenseNumber || 'KA-EXC-2026-RET-8842'}</span>
+            <span>Lic: {compliance?.exciseLicenseNumber || 'CONFIGURE_PER_LICENSED_STORE'}</span>
           </span>
           <span className="text-slate-400 font-bold">•</span>
           <span className="text-emerald-800 font-bold uppercase tracking-wider">
