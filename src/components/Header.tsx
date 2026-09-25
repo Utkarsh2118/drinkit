@@ -588,7 +588,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="DrinkIt - 20 Min Drink Delivery"
             >
               <img
-                src="/images/drinkit-logo.svg"
+                src="/images/drinkit-logo.webp"
                 alt="DrinkIt - Liquor Delivery"
                 className="w-20 h-14 sm:w-24 sm:h-16 object-contain object-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200"
               />
