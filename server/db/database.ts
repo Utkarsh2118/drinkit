@@ -56,6 +56,7 @@ export interface DatabaseSchema {
   invoiceSequence: number;
   supportTickets?: SupportTicket[];
   revokedTokens?: string[];
+  catalogueVersion?: number;
 }
 
 class DatabaseManager {
@@ -117,28 +118,37 @@ class DatabaseManager {
           parsed.wishlists = parsed.wishlists || {};
           parsed.supportTickets = parsed.supportTickets || [];
           parsed.revokedTokens = parsed.revokedTokens || [];
+          parsed.catalogueVersion = parsed.catalogueVersion || 0;
 
           // Migrate stores, zones, compliance, and products to UP + Delhi NCR if previous data had old regions
-          const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru');
-          if (hasOldStores || !parsed.stores || parsed.stores.length === 0) {
+          const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru' || s.state === 'Karnataka');
+          const needsCatalogueV3 = parsed.catalogueVersion < 3 || hasOldStores || !parsed.stores || parsed.stores.length === 0;
+          if (needsCatalogueV3) {
             parsed.stores = SEED_STORES;
             parsed.deliveryZones = SEED_DELIVERY_ZONES;
             parsed.complianceSettings = SEED_COMPLIANCE_SETTINGS;
             parsed.categories = SEED_CATEGORIES;
             parsed.brands = SEED_BRANDS;
             parsed.products = SEED_PRODUCTS;
-            // Re-generate store inventory for UP & Delhi stores
+            parsed.catalogueVersion = 3;
+            // Re-generate store inventory with deliberate store-specific catalogue differences.
             parsed.inventory = [];
             for (const store of SEED_STORES) {
               for (const product of SEED_PRODUCTS) {
-                const baseStock = product.isBestseller ? 35 : 20;
-                const stockOffset = (store.code.charCodeAt(store.code.length - 1) % 5) * 3;
+                const stateAllowed = !product.availableStates?.length || product.availableStates.includes(store.state);
+                const productIndex = SEED_PRODUCTS.findIndex(p => p.id === product.id);
+                const storeIndex = SEED_STORES.findIndex(s => s.id === store.id);
+                const selectiveAvailability = ((productIndex + storeIndex) % 5) !== 4;
+                if (!stateAllowed || !selectiveAvailability || !product.isActive) continue;
+                const baseStock = product.isBestseller ? 24 : 12;
+                const stockOffset = ((storeIndex + productIndex) % 4) * 4;
                 parsed.inventory.push({
                   id: `inv_${store.id}_${product.id}`,
                   storeId: store.id,
                   productId: product.id,
-                  quantity: Math.max(5, baseStock + stockOffset),
+                  quantity: baseStock + stockOffset,
                   reservedQuantity: 0,
+                  availableQuantity: baseStock + stockOffset,
                   lowStockThreshold: 5,
                   updatedAt: new Date().toISOString(),
                 });
@@ -226,6 +236,9 @@ class DatabaseManager {
             }
           }
 
+          // Keep the regional catalogue version authoritative after migration.
+          parsed.catalogueVersion = 3;
+
           // Ensure stores list has all configured stores
           const existingStoreIds = new Set((parsed.stores || []).map((s: any) => s.id));
           for (const ss of SEED_STORES) {
@@ -233,12 +246,15 @@ class DatabaseManager {
               parsed.stores.push(ss);
               // Initialize inventory for new store
               for (const prod of (parsed.products || [])) {
+                const stateAllowed = !prod.availableStates?.length || prod.availableStates.includes(ss.state);
+                if (!stateAllowed || !prod.isActive) continue;
                 parsed.inventory.push({
                   id: `inv_${ss.id}_${prod.id}`,
                   storeId: ss.id,
                   productId: prod.id,
-                  quantity: 30,
+                  quantity: 15,
                   reservedQuantity: 0,
+                  availableQuantity: 15,
                   lowStockThreshold: 5,
                   updatedAt: new Date().toISOString(),
                 });
@@ -430,19 +446,24 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
   }
 
   private createSeedData(): DatabaseSchema {
-    // Generate store inventories for each store and product
+    // Generate deliberately store-specific inventories; no universal availability.
     const inventory: StoreInventoryItem[] = [];
     for (const store of SEED_STORES) {
+      const storeIndex = SEED_STORES.findIndex(s => s.id === store.id);
       for (const product of SEED_PRODUCTS) {
-        // Vary stock naturally by store
-        const baseStock = product.isBestseller ? 35 : 20;
-        const stockOffset = (store.code.charCodeAt(store.code.length - 1) % 5) * 3;
+        const stateAllowed = !product.availableStates?.length || product.availableStates.includes(store.state);
+        const productIndex = SEED_PRODUCTS.findIndex(p => p.id === product.id);
+        const selectiveAvailability = ((productIndex + storeIndex) % 5) !== 4;
+        if (!stateAllowed || !selectiveAvailability || !product.isActive) continue;
+        const baseStock = product.isBestseller ? 24 : 12;
+        const stockOffset = ((storeIndex + productIndex) % 4) * 4;
         inventory.push({
           id: `inv_${store.id}_${product.id}`,
           storeId: store.id,
           productId: product.id,
-          quantity: Math.max(5, baseStock + stockOffset),
+          quantity: baseStock + stockOffset,
           reservedQuantity: 0,
+          availableQuantity: baseStock + stockOffset,
           lowStockThreshold: 5,
           updatedAt: new Date().toISOString(),
         });
