@@ -494,7 +494,7 @@ export const SEED_PRODUCTS: Product[] = [
     priceSource: 'https://www.exportersindia.com/product-detail/royal-tissue-paper-napkin-3736748249.htm',
     priceVerifiedAt: VERIFIED_AT,
     regionalPrices: [{ market: 'India', price: 45, mrp: 45, currency: 'INR', source: 'https://www.exportersindia.com/product-detail/royal-tissue-paper-napkin-3736748249.htm', sourceType: 'secondary_aggregator', verified: true, verifiedAt: VERIFIED_AT }],
-  },,
+  },
   {
     id: 'prod_haldiram_aloo_bhujia_400',
     name: "Haldiram's Aloo Bhujia",
