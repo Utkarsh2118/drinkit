@@ -300,6 +300,15 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
       )}
 
       {/* ========================================================= */}
+      {/* 1. COMPLIANCE NOTICE */}
+      <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600">
+        <ShieldCheck className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+        <p className="text-[11px] leading-relaxed">
+          Alcohol availability, minimum age, store licensing and delivery rules depend on the selected jurisdiction and licensed store. Final eligibility is checked again at checkout.
+        </p>
+      </div>
+
+      {/* ========================================================= */}
       {/* 1. SEARCH ACTIVE NOTIFICATION (IF SEARCHING)             */}
       {/* ========================================================= */}
       {searchQuery && searchQuery.trim() && (
