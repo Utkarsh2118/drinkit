@@ -122,7 +122,7 @@ class DatabaseManager {
 
           // Migrate stores, zones, compliance, and products to UP + Delhi NCR if previous data had old regions
           const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru' || s.state === 'Karnataka');
-          const needsCatalogueV3 = parsed.catalogueVersion < 3 || hasOldStores || !parsed.stores || parsed.stores.length === 0;
+          const needsCatalogueV3 = parsed.catalogueVersion < 4 || hasOldStores || !parsed.stores || parsed.stores.length === 0;
           if (needsCatalogueV3) {
             parsed.stores = SEED_STORES;
             parsed.deliveryZones = SEED_DELIVERY_ZONES;
@@ -130,7 +130,7 @@ class DatabaseManager {
             parsed.categories = SEED_CATEGORIES;
             parsed.brands = SEED_BRANDS;
             parsed.products = SEED_PRODUCTS;
-            parsed.catalogueVersion = 3;
+            parsed.catalogueVersion = 4;
             // Re-generate store inventory with deliberate store-specific catalogue differences.
             parsed.inventory = [];
             for (const store of SEED_STORES) {
@@ -237,7 +237,7 @@ class DatabaseManager {
           }
 
           // Keep the regional catalogue version authoritative after migration.
-          parsed.catalogueVersion = 3;
+          parsed.catalogueVersion = 4;
 
           // Ensure stores list has all configured stores
           const existingStoreIds = new Set((parsed.stores || []).map((s: any) => s.id));
