@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Calendar, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../services/api.ts';
+import { PlatformComplianceSettings } from '../types.ts';
 
 interface AgeVerificationModalProps {
   isOpen: boolean;
@@ -13,8 +15,21 @@ export const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({ isOp
   const [dob, setDob] = useState(user?.dateOfBirth || '1998-04-12');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [compliance, setCompliance] = useState<PlatformComplianceSettings | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      api
+        .get<PlatformComplianceSettings>('/compliance')
+        .then(res => setCompliance(res))
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const minAge = compliance?.legalDrinkingAge || 21;
+  const jurisdiction = compliance?.jurisdiction || 'Karnataka, India';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +41,7 @@ export const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({ isOp
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Age verification failed. You must be at least 21 years old.');
+      setError(err.message || `Age verification failed. You must be at least ${minAge} years old.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -57,7 +72,7 @@ export const AgeVerificationModal: React.FC<AgeVerificationModalProps> = ({ isOp
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
-            Alcoholic beverages can only be ordered by individuals who have attained the legal drinking age (<strong>21+ in Karnataka</strong>). Please enter your Date of Birth to verify eligibility.
+            Alcoholic beverages can only be ordered by individuals who have attained the legal drinking age (<strong>{minAge}+ in {jurisdiction}</strong>). Please enter your Date of Birth to verify eligibility.
           </div>
 
           <div>

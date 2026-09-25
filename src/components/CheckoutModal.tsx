@@ -101,7 +101,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // New Address inline toggle
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [newAddrLine, setNewAddrLine] = useState('');
-  const [newPostalCode, setNewPostalCode] = useState(selectedLocation.postalCode || '560038');
+  const [newPostalCode, setNewPostalCode] = useState(selectedLocation.postalCode || '201301');
 
   // Timer countdown for active reservation
   useEffect(() => {
@@ -136,8 +136,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           fullName: user?.name || 'Customer',
           phone: user?.phone || '+91 9876543210',
           addressLine1: selectedLocation.addressLine,
-          city: 'Bengaluru',
-          state: 'Karnataka',
+          city: selectedLocation.city || 'Noida',
+          state: selectedLocation.state || 'Uttar Pradesh',
           postalCode: selectedLocation.postalCode,
           latitude: selectedLocation.latitude,
           longitude: selectedLocation.longitude,
@@ -156,8 +156,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       fullName: user?.name || 'Customer',
       phone: user?.phone || '+91 9876543210',
       addressLine1: newAddrLine,
-      city: 'Bengaluru',
-      state: 'Karnataka',
+      city: selectedLocation.city || 'Noida',
+      state: selectedLocation.state || 'Uttar Pradesh',
       postalCode: newPostalCode,
       latitude: selectedLocation.latitude,
       longitude: selectedLocation.longitude,
@@ -199,7 +199,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           razorpay_payment_id: params.razorpay_payment_id,
           razorpay_signature: params.razorpay_signature,
           reservationId: params.reservationId,
-          storeId: activeStore?.id || 'store_indiranagar',
+          storeId: activeStore?.id || 'store_noida_sec18',
           deliveryAddress,
           couponCode: couponCode || undefined,
           paymentMethod,
@@ -243,7 +243,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setIsProcessing(true);
 
     try {
-      const targetStoreId = activeStore?.id || 'store_indiranagar';
+      const targetStoreId = activeStore?.id || 'store_noida_sec18';
 
       if (paymentMethod === 'cod') {
         // Direct COD Order placement

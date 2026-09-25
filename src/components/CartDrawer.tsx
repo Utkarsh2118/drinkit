@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
-import { X, Trash2, Plus, Minus, Tag, Zap, ShieldCheck, ArrowRight, Sparkles, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Trash2, Plus, Minus, Tag, Zap, ShieldCheck, ArrowRight, Sparkles, Check, AlertTriangle, AlertCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext.tsx';
 import { useLocation } from '../context/LocationContext.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import { useRouter } from '../context/RouterContext.tsx';
+import { api } from '../services/api.ts';
+import { PlatformComplianceSettings } from '../types.ts';
 
 interface CartDrawerProps {
   onProceedToCheckout: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) => {
+  const { user } = useAuth();
+  const { navigate } = useRouter();
   const {
     items,
     totalItemCount,
@@ -32,8 +38,27 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
   const [couponInput, setCouponInput] = useState('');
   const [isApplying, setIsApplying] = useState(false);
   const [couponStatusMsg, setCouponStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [compliance, setCompliance] = useState<PlatformComplianceSettings | null>(null);
+
+  useEffect(() => {
+    if (isCartDrawerOpen) {
+      api.get<PlatformComplianceSettings>('/compliance').then(setCompliance).catch(() => {});
+    }
+  }, [isCartDrawerOpen]);
 
   if (!isCartDrawerOpen) return null;
+
+  // Calculate total alcoholic bottles
+  const totalAlcoholicBottles = items.reduce((acc, item) => {
+    if (!item.product.isAlcoholic) return acc;
+    const match = (item.product.volume || '').match(/(\d+)\s*x/);
+    const count = match ? parseInt(match[1], 10) : 1;
+    return acc + item.quantity * count;
+  }, 0);
+
+  const maxBottles = compliance?.maxBottlesPerOrder || 6;
+  const isBottleLimitExceeded = totalAlcoholicBottles > maxBottles;
+  const isDryDayActive = Boolean(compliance?.dryDayActive && totalAlcoholicBottles > 0);
 
   const freeDeliveryThreshold = 999;
   const remainingForFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
@@ -301,13 +326,47 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
 
         {/* Footer Checkout CTA */}
         {items.length > 0 && (
-          <div className="p-4 border-t border-slate-200 bg-white space-y-2">
+          <div className="p-4 border-t border-slate-200 bg-white space-y-2.5">
+            {/* Regulatory Compliance Feedback */}
+            {isDryDayActive ? (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Dry Day Active:</span>
+                  <p className="text-[11px] mt-0.5 text-rose-700">
+                    Alcohol sales are legally prohibited today ({compliance?.dryDayReason || 'Statutory Excise Mandate'}). Please remove alcohol items to proceed.
+                  </p>
+                </div>
+              </div>
+            ) : isBottleLimitExceeded ? (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">Excise Limit Exceeded:</span>
+                  <p className="text-[11px] mt-0.5 text-amber-800">
+                    Maximum {maxBottles} bottles of alcohol permitted per order under State Excise Rules. You currently have {totalAlcoholicBottles} bottles.
+                  </p>
+                </div>
+              </div>
+            ) : totalAlcoholicBottles > 0 ? (
+              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px] text-slate-600">
+                <span className="font-medium">Excise Retail Carry Limit:</span>
+                <span className="font-bold text-slate-800">{totalAlcoholicBottles} / {maxBottles} bottles</span>
+              </div>
+            ) : null}
+
             <button
               onClick={() => {
+                if (isDryDayActive || isBottleLimitExceeded) return;
                 closeCartDrawer();
-                onProceedToCheckout();
+                if (!user) {
+                  navigate('/login?redirect=/checkout');
+                } else {
+                  onProceedToCheckout();
+                }
               }}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm flex items-center justify-between shadow-md transition-all active:scale-98"
+              disabled={isDryDayActive || isBottleLimitExceeded}
+              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold text-sm flex items-center justify-between shadow-md transition-all active:scale-98"
             >
               <div className="text-left leading-tight">
                 <div className="text-[10px] uppercase font-bold text-emerald-100 tracking-wider">
@@ -316,7 +375,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                 <div className="text-base font-black">₹{totalAmount}</div>
               </div>
               <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-extrabold">
-                <span>Proceed to Checkout</span>
+                <span>{isDryDayActive ? 'Dry Day — Paused' : isBottleLimitExceeded ? 'Exceeds Limit' : 'Proceed to Checkout'}</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </button>

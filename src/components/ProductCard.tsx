@@ -9,7 +9,7 @@ interface ProductCardProps {
   onSelect: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onSelect }) => {
   const { addItem, updateQuantity, getItemQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
@@ -30,6 +30,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
           alt={product.name}
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Wishlist Button - 44px hit boundary with comfortable touch */}
@@ -149,4 +150,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       </div>
     </div>
   );
-};
+});

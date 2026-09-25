@@ -63,9 +63,9 @@ router.get('/reverse', async (req: Request, res: Response) => {
           const result: GeocodeResult = {
             label,
             addressLine: first.formatted_address,
-            city: locality || 'Bengaluru',
-            state: state || 'Karnataka',
-            postalCode: postalCode || '560038',
+            city: locality || 'Noida',
+            state: state || 'Uttar Pradesh',
+            postalCode: postalCode || '201301',
             latitude,
             longitude,
             formattedAddress: first.formatted_address,
@@ -95,9 +95,9 @@ router.get('/reverse', async (req: Request, res: Response) => {
       if (data && data.address) {
         const addr = data.address;
         const sublocality = addr.suburb || addr.neighbourhood || addr.residential || addr.quarter || addr.village || addr.road;
-        const city = addr.city || addr.town || addr.municipality || addr.county || 'Bengaluru';
-        const state = addr.state || 'Karnataka';
-        const postalCode = addr.postcode || '560038';
+        const city = addr.city || addr.town || addr.municipality || addr.county || 'Noida';
+        const state = addr.state || 'Uttar Pradesh';
+        const postalCode = addr.postcode || '201301';
 
         const label = [sublocality, city].filter(Boolean).join(', ') || data.display_name.split(',')[0];
         const result: GeocodeResult = {
@@ -175,9 +175,9 @@ router.get('/search', async (req: Request, res: Response) => {
             return {
               label,
               addressLine: item.formatted_address,
-              city: locality || 'Bengaluru',
-              state: state || 'Karnataka',
-              postalCode: postalCode || '560038',
+              city: locality || 'Noida',
+              state: state || 'Uttar Pradesh',
+              postalCode: postalCode || '201301',
               latitude: item.geometry.location.lat,
               longitude: item.geometry.location.lng,
               formattedAddress: item.formatted_address,

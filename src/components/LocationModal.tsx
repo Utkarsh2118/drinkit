@@ -204,8 +204,8 @@ export const LocationModal: React.FC = () => {
       flatNumber: newAddrFlat,
       landmark: newAddrLandmark,
       addressLine1: selectedLocation.addressLine,
-      city: selectedLocation.city || 'Bengaluru',
-      state: selectedLocation.state || 'Karnataka',
+      city: selectedLocation.city || 'Noida',
+      state: selectedLocation.state || 'Uttar Pradesh',
       postalCode: selectedLocation.postalCode,
       latitude: selectedLocation.latitude,
       longitude: selectedLocation.longitude,
@@ -277,7 +277,7 @@ export const LocationModal: React.FC = () => {
               <input
                 id="input-location-search"
                 type="text"
-                placeholder="Search area, street, landmark (e.g. LPU, Indiranagar)..."
+                placeholder="Search area, street, landmark (e.g. Noida Sector 18, Saket, Gomti Nagar)..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-10 pr-10 py-3 rounded-2xl bg-white border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium shadow-xs"

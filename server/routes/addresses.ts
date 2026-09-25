@@ -76,7 +76,7 @@ function validateAddressPayload(body: any): { isValid: boolean; error?: string; 
       landmark: landmark ? String(landmark).trim() : '',
       area: area ? String(area).trim() : '',
       city: cleanCity,
-      state: state ? String(state).trim() : 'Karnataka',
+      state: state ? String(state).trim() : 'Uttar Pradesh',
       postalCode: cleanPostalCode,
       latitude: latNum,
       longitude: lonNum,

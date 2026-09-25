@@ -6,10 +6,11 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  isLoggingOut: boolean;
   login: (email: string, pass: string) => Promise<void>;
   register: (data: { name: string; email: string; password: string; phone: string; dateOfBirth: string }) => Promise<void>;
-  sendCustomerOtp: (phone: string) => Promise<{ expiresInSeconds: number; resendCooldownSeconds: number; devOtp?: string; isExistingCustomer: boolean }>;
-  verifyCustomerOtp: (phone: string, otp: string) => Promise<{ isNewUser: boolean; user?: User }>;
+  sendCustomerOtp: (phone: string) => Promise<{ phone: string; expiresInSeconds: number; resendCooldownSeconds: number; devOtp?: string; isExistingCustomer: boolean }>;
+  verifyCustomerOtp: (phone: string, otp: string) => Promise<{ isNewUser: boolean; user?: User; token?: string }>;
   completeCustomerProfile: (phone: string, name: string, email?: string, dateOfBirth?: string) => Promise<User>;
   adminLogin: (adminId: string, pass: string) => Promise<User>;
   storeLogin: (staffId: string, pass: string) => Promise<User>;
@@ -18,7 +19,12 @@ interface AuthContextType {
   verifyAge: (dateOfBirth: string) => Promise<void>;
   addAddress: (address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
   deleteAddress: (id: string) => Promise<void>;
-  logout: () => void;
+  updateProfile: (data: Partial<User>) => Promise<User>;
+  uploadAvatar: (avatarData: string, mimeType?: string) => Promise<string>;
+  requestPhoneChangeOtp: () => Promise<string | undefined>;
+  verifyPhoneChange: (currentPhoneOtp: string, newPhone: string, newPhoneOtp: string) => Promise<User>;
+  deactivateAccount: (reason: string, confirmText: string) => Promise<void>;
+  logout: () => Promise<void>;
   isAgeVerified: boolean;
   isCustomerAuthModalOpen: boolean;
   setIsCustomerAuthModalOpen: (open: boolean) => void;
@@ -32,19 +38,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('drinkit_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const [isCustomerAuthModalOpen, setIsCustomerAuthModalOpen] = useState<boolean>(false);
   const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState<boolean>(false);
 
-  // Initial user fetch or default to demo customer
+  // Restore authenticated session from token or remain guest
   useEffect(() => {
     const initAuth = async () => {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-      const isInternalPortal =
-        currentPath.startsWith('/admin') ||
-        currentPath.startsWith('/store') ||
-        currentPath.startsWith('/delivery') ||
-        currentPath === '/login';
-
       if (token) {
         try {
           const userData = await api.get<User>('/auth/me');
@@ -53,15 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem('drinkit_token');
           setToken(null);
           setUser(null);
-          if (!isInternalPortal) {
-            await switchDemoUser('customer@drinkit.demo');
-          }
         }
       } else {
-        // If on customer shopping home, allow demo customer session for seamless browsing
-        if (!isInternalPortal) {
-          await switchDemoUser('customer@drinkit.demo');
-        }
+        setUser(null);
       }
       setIsLoading(false);
     };
@@ -89,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(res.user);
       setIsCustomerAuthModalOpen(false);
     }
-    return { isNewUser: res.isNewUser, user: res.user };
+    return { isNewUser: res.isNewUser, user: res.user, token: res.token };
   };
 
   const completeCustomerProfile = async (phone: string, name: string, email?: string, dateOfBirth?: string) => {
@@ -185,10 +179,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const updateProfile = async (data: Partial<User>): Promise<User> => {
+    const res = await api.patch<User>('/profile', data);
+    setUser(res);
+    return res;
+  };
+
+  const uploadAvatar = async (avatarData: string, mimeType?: string): Promise<string> => {
+    const res = await api.post<{ avatarUrl: string }>('/profile/avatar', { avatarData, mimeType });
+    if (user) {
+      setUser({ ...user, avatarUrl: res.avatarUrl });
+    }
+    return res.avatarUrl;
+  };
+
+  const requestPhoneChangeOtp = async (): Promise<string | undefined> => {
+    const res = await api.post<{ devOtp?: string }>('/profile/change-phone/request-current-otp', {});
+    return res.devOtp;
+  };
+
+  const verifyPhoneChange = async (currentPhoneOtp: string, newPhone: string, newPhoneOtp: string): Promise<User> => {
+    const res = await api.post<User>('/profile/change-phone/verify-and-update', {
+      currentPhoneOtp,
+      newPhone,
+      newPhoneOtp,
+    });
+    setUser(res);
+    return res;
+  };
+
+  const deactivateAccount = async (reason: string, confirmText: string): Promise<void> => {
+    await api.post('/profile/deactivate', { reason, confirmText });
     localStorage.removeItem('drinkit_token');
     setToken(null);
     setUser(null);
+  };
+
+  const logout = async () => {
+    setIsLoggingOut(true);
+    try {
+      if (token) {
+        await api.post('/auth/logout', {});
+      }
+    } catch (e) {
+      // Proceed with client cleanup regardless
+    } finally {
+      localStorage.removeItem('drinkit_token');
+      setToken(null);
+      setUser(null);
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -197,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         isLoading,
+        isLoggingOut,
         login,
         register,
         sendCustomerOtp,
@@ -209,6 +250,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         verifyAge,
         addAddress,
         deleteAddress,
+        updateProfile,
+        uploadAvatar,
+        requestPhoneChangeOtp,
+        verifyPhoneChange,
+        deactivateAccount,
         logout,
         isAgeVerified: Boolean(user?.isAgeVerified),
         isCustomerAuthModalOpen,

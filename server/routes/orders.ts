@@ -6,6 +6,7 @@ import { DeliveryEstimationService } from '../services/deliveryEstimate.ts';
 import { PaymentService } from '../services/paymentService.ts';
 import { CouponService } from '../services/couponService.ts';
 import { InvoiceService } from '../services/invoiceService.ts';
+import { socketService } from '../services/socketService.ts';
 import { Order, OrderItem, OrderStatus, CancellationDetails, RefundDetails } from '../types.ts';
 
 const router = Router();
@@ -19,7 +20,7 @@ router.post('/calculate-totals', (req, res) => {
   }
 
   const products = db.getProducts();
-  const targetStoreId = storeId || 'store_indiranagar';
+  const targetStoreId = storeId || 'store_noida_sec18';
 
   let subtotal = 0;
   const verifiedItems: OrderItem[] = [];
@@ -61,12 +62,13 @@ router.post('/calculate-totals', (req, res) => {
   }
 
   // Compliance check
-  const complianceCheck = ComplianceService.checkOrderCompliance(items);
+  const deliveryPostal = req.body.deliveryPostalCode || req.body.postalCode || req.body.deliveryAddress?.postalCode;
+  const complianceCheck = ComplianceService.checkOrderCompliance(items, deliveryPostal);
   if (!complianceCheck.permitted) {
     return res.status(403).json({
       success: false,
       message: complianceCheck.reason,
-      errorCode: 'COMPLIANCE_RESTRICTION',
+      errorCode: complianceCheck.errorCode || 'COMPLIANCE_RESTRICTION',
     });
   }
 
@@ -133,13 +135,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     });
   }
 
-  // 2. Order compliance (Excise rules / Dry days)
-  const complianceCheck = ComplianceService.checkOrderCompliance(items);
+  // 2. Order compliance (Excise rules / Dry days / Hours / Bottle & Litre ceilings)
+  const complianceCheck = ComplianceService.checkOrderCompliance(items, deliveryAddress?.postalCode);
   if (!complianceCheck.permitted) {
     return res.status(403).json({
       success: false,
       message: complianceCheck.reason,
-      errorCode: 'COMPLIANCE_RESTRICTION',
+      errorCode: complianceCheck.errorCode || 'COMPLIANCE_RESTRICTION',
     });
   }
 
@@ -324,10 +326,22 @@ router.get('/:id', authenticate, (req: AuthRequest, res: Response) => {
     return res.status(404).json({ success: false, message: 'Order not found' });
   }
 
-  // Authorization check
+  // Strict Resource Ownership & Authorization check:
   const user = req.user!;
   if (user.role === 'customer' && order.userId !== user.id) {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: You do not have permission to view another customer’s order.',
+      errorCode: 'FORBIDDEN_RESOURCE_OWNERSHIP',
+    });
+  }
+
+  if (user.role === 'staff' && user.assignedStoreId && order.storeId !== user.assignedStoreId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: You do not have permission to access orders from another store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
   }
 
   res.json({
@@ -345,7 +359,11 @@ router.get('/:id/invoice', authenticate, (req: AuthRequest, res: Response) => {
 
   const user = req.user!;
   if (user.role === 'customer' && order.userId !== user.id) {
-    return res.status(403).json({ success: false, message: 'Access denied' });
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: You do not have permission to view this invoice.',
+      errorCode: 'FORBIDDEN_RESOURCE_OWNERSHIP',
+    });
   }
 
   const invoiceData = InvoiceService.buildInvoiceData(order);
@@ -364,7 +382,7 @@ router.get('/:id/invoice/html', authenticate, (req: AuthRequest, res: Response) 
 
   const user = req.user!;
   if (user.role === 'customer' && order.userId !== user.id) {
-    return res.status(403).send('<h3>Access denied: Unauthorized to view invoice</h3>');
+    return res.status(403).send('<h3>Forbidden: Unauthorized to view another customer’s invoice</h3>');
   }
 
   const html = InvoiceService.generateInvoiceHtml(order);
@@ -445,16 +463,62 @@ router.post('/:id/status', authenticate, requireRole(['staff', 'delivery', 'admi
     return res.status(400).json({ success: false, message: 'Status is required' });
   }
 
+  const order = db.findOrderById(req.params.id);
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
   const user = req.user!;
-  const updated = db.updateOrderStatus(req.params.id, status as OrderStatus, note, {
+
+  // Strict RBAC & Ownership validation:
+  if (user.role === 'delivery') {
+    // Delivery rider can ONLY update orders assigned to THEM
+    if (order.deliveryAgentId !== user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Delivery partners can only update orders assigned to them.',
+        errorCode: 'FORBIDDEN_NOT_ASSIGNED_RIDER',
+      });
+    }
+    // Delivery rider can only transition to OUT_FOR_DELIVERY or trigger delivery completion
+    if (!['OUT_FOR_DELIVERY', 'DELIVERED'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Delivery partner can only set status to OUT_FOR_DELIVERY or DELIVERED.',
+        errorCode: 'INVALID_STATUS_TRANSITION',
+      });
+    }
+  } else if (user.role === 'staff') {
+    // Store staff can ONLY update orders for their assigned store
+    if (user.assignedStoreId && order.storeId !== user.assignedStoreId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Store staff can only update orders belonging to their assigned store.',
+        errorCode: 'FORBIDDEN_STORE_MISMATCH',
+      });
+    }
+    // Store staff can only set preparation statuses
+    if (!['CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store staff can only update order preparation statuses (CONFIRMED, PREPARING, READY_FOR_PICKUP).',
+        errorCode: 'INVALID_STATUS_TRANSITION',
+      });
+    }
+  }
+
+  const updated = db.updateOrderStatus(order.id, status as OrderStatus, note, {
     id: user.id,
     name: user.name,
     role: user.role,
   });
 
   if (!updated) {
-    return res.status(404).json({ success: false, message: 'Order not found' });
+    return res.status(500).json({ success: false, message: 'Failed to update order status' });
   }
+
+  // Real-time broadcast to customer and operations
+  socketService.emitOrderUpdate(updated, 'order:status_changed');
 
   res.json({
     success: true,
@@ -468,6 +532,38 @@ router.post('/:id/assign', authenticate, requireRole(['staff', 'admin', 'deliver
   const { deliveryAgentId, deliveryAgentName, deliveryAgentPhone } = req.body;
   const user = req.user!;
 
+  const order = db.findOrderById(req.params.id);
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  // Store staff can only assign riders for their own store
+  if (user.role === 'staff' && user.assignedStoreId && order.storeId !== user.assignedStoreId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Store staff can only assign deliveries for their assigned dark store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
+  }
+
+  // Delivery rider can only assign THEMSELVES to an unassigned order
+  if (user.role === 'delivery') {
+    if (deliveryAgentId && deliveryAgentId !== user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Delivery partners can only claim deliveries for themselves.',
+        errorCode: 'FORBIDDEN_UNAUTHORIZED_ASSIGNMENT',
+      });
+    }
+    if (order.deliveryAgentId && order.deliveryAgentId !== user.id) {
+      return res.status(409).json({
+        success: false,
+        message: 'This delivery has already been accepted by another delivery partner.',
+        errorCode: 'ORDER_ALREADY_ASSIGNED',
+      });
+    }
+  }
+
   const riderId = deliveryAgentId || user.id;
   const riderName = deliveryAgentName || user.name;
   const riderPhone = deliveryAgentPhone || user.phone;
@@ -476,6 +572,8 @@ router.post('/:id/assign', authenticate, requireRole(['staff', 'admin', 'deliver
   if (!updated) {
     return res.status(404).json({ success: false, message: 'Order not found' });
   }
+
+  socketService.emitOrderUpdate(updated, 'order:rider_assigned');
 
   res.json({
     success: true,
@@ -488,9 +586,19 @@ router.post('/:id/assign', authenticate, requireRole(['staff', 'admin', 'deliver
 router.post('/:id/verify-delivery', authenticate, requireRole(['delivery', 'admin']), (req: AuthRequest, res: Response) => {
   const { otp, confirmedAge21Plus } = req.body;
   const order = db.findOrderById(req.params.id);
+  const user = req.user!;
 
   if (!order) {
     return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  // Strict ownership check: Delivery agent can only complete their assigned delivery!
+  if (user.role === 'delivery' && order.deliveryAgentId !== user.id) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: You cannot complete or verify deliveries assigned to another rider.',
+      errorCode: 'FORBIDDEN_NOT_ASSIGNED_RIDER',
+    });
   }
 
   if (!confirmedAge21Plus) {
@@ -510,10 +618,14 @@ router.post('/:id/verify-delivery', authenticate, requireRole(['delivery', 'admi
   }
 
   const updated = db.updateOrderStatus(order.id, 'DELIVERED', 'Delivered at doorstep; recipient 21+ government photo ID verified', {
-    id: req.user!.id,
-    name: req.user!.name,
-    role: req.user!.role,
+    id: user.id,
+    name: user.name,
+    role: user.role,
   });
+
+  if (updated) {
+    socketService.emitOrderUpdate(updated, 'order:delivered');
+  }
 
   res.json({
     success: true,

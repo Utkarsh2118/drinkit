@@ -192,7 +192,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   // Fetch products
   useEffect(() => {
     setIsLoading(true);
-    let url = `/products?storeId=${activeStore?.id || 'store_indiranagar'}&sort=${sortBy}&limit=120`;
+    let url = `/products?storeId=${activeStore?.id || 'store_noida_sec18'}&sort=${sortBy}&limit=120`;
 
     if (selectedCategory !== 'all') {
       url += `&category=${selectedCategory}`;
@@ -358,7 +358,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                 DrinkIt isn't available at this location yet
               </h4>
               <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                We're not delivering to <strong>{selectedLocation.label}</strong> yet. You can browse our catalog, or switch your delivery address to our active zones in Bengaluru or LPU/Phagwara.
+                We're not delivering to <strong>{selectedLocation.label}</strong> yet. You can browse our catalog, or switch your delivery address to our active zones in UP & Delhi NCR.
               </p>
             </div>
           </div>
@@ -386,7 +386,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                 Search results for <span className="text-emerald-700 font-extrabold">"{searchQuery}"</span>
               </div>
               <div className="text-[11px] text-slate-500 font-medium">
-                {allProducts.length} item{allProducts.length === 1 ? '' : 's'} available in {activeStore?.name || 'Indiranagar'}
+                {allProducts.length} item{allProducts.length === 1 ? '' : 's'} available in {activeStore?.name || 'Noida & Delhi NCR'}
               </div>
             </div>
           </div>
@@ -850,7 +850,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
       <div className="pt-6 pb-2 text-center border-t border-slate-200/80">
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-600 font-bold mb-1">
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Licensed Micro-Warehouse Partner • Karnataka State Excise Compliant</span>
+          <span>Licensed Micro-Warehouse Partner • UP & Delhi State Excise Compliant</span>
         </div>
         <p className="text-[11px] text-slate-400 max-w-xl mx-auto leading-relaxed">
           Alcohol sale & delivery restricted strictly to individuals 21 years of age and above. Physical government photo ID verification mandatory upon doorstep delivery. Drink responsibly. Never drink and drive.

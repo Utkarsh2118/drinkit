@@ -1,7 +1,8 @@
 import React from 'react';
-import { Home, Heart, Package, ShoppingBag } from 'lucide-react';
+import { Home, Heart, Package, ShoppingBag, User } from 'lucide-react';
 import { useCart } from '../context/CartContext.tsx';
 import { useWishlist } from '../context/WishlistContext.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface MobileBottomNavProps {
   activeView: string;
@@ -11,11 +12,12 @@ interface MobileBottomNavProps {
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeView, setActiveView }) => {
   const { totalItemCount, totalAmount, openCartDrawer } = useCart();
   const { wishlist } = useWishlist();
+  const { user } = useAuth();
 
   return (
     <nav
       aria-label="Mobile navigation"
-      className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] flex items-center justify-around shadow-lg"
+      className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] flex items-center justify-around shadow-lg"
     >
       {/* Home */}
       <button
@@ -77,6 +79,24 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeView, se
         <span className="text-slate-900 font-extrabold font-mono">
           {totalAmount > 0 ? `₹${totalAmount}` : 'Cart'}
         </span>
+      </button>
+
+      {/* Profile */}
+      <button
+        type="button"
+        onClick={() => setActiveView('profile')}
+        className={`flex-1 flex flex-col items-center justify-center min-h-[44px] py-1 gap-0.5 text-[10px] font-extrabold transition-colors ${
+          activeView === 'profile' ? 'text-emerald-700' : 'text-slate-500 hover:text-slate-900'
+        }`}
+      >
+        {user?.avatarUrl ? (
+          <div className="w-5 h-5 rounded-full overflow-hidden border border-emerald-500">
+            <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <User className="w-5 h-5" />
+        )}
+        <span>Profile</span>
       </button>
     </nav>
   );

@@ -23,6 +23,8 @@ import {
   RefundStatus,
   ReviewStatus,
   WishlistItem,
+  SupportTicket,
+  SupportTicketMessage,
 } from '../types.ts';
 import {
   SEED_CATEGORIES,
@@ -52,6 +54,8 @@ export interface DatabaseSchema {
   complianceSettings: PlatformComplianceSettings;
   auditLogs: AuditLog[];
   invoiceSequence: number;
+  supportTickets?: SupportTicket[];
+  revokedTokens?: string[];
 }
 
 class DatabaseManager {
@@ -59,9 +63,16 @@ class DatabaseManager {
   private storageFilePath: string;
   private sweepIntervalTimer?: NodeJS.Timeout;
 
+  // In-memory high-speed indexes (O(1) lookups for heavy catalog/store traffic)
+  private productMap = new Map<string, Product>();
+  private userMap = new Map<string, User>();
+  private orderMap = new Map<string, Order>();
+  private inventoryKeyMap = new Map<string, StoreInventoryItem>();
+
   constructor() {
     this.storageFilePath = path.join(process.cwd(), 'server', 'db', 'drinkit_data.json');
     this.data = this.loadOrInitialize();
+    this.rebuildIndexes();
 
     // Periodic sweeper for expired inventory reservations (every 30 seconds)
     this.sweepIntervalTimer = setInterval(() => {
@@ -73,6 +84,28 @@ class DatabaseManager {
     }, 30000);
   }
 
+  public rebuildIndexes(): void {
+    this.productMap.clear();
+    for (const p of this.data.products || []) {
+      this.productMap.set(p.id, p);
+    }
+
+    this.userMap.clear();
+    for (const u of this.data.users || []) {
+      this.userMap.set(u.id, u);
+    }
+
+    this.orderMap.clear();
+    for (const o of this.data.orders || []) {
+      this.orderMap.set(o.id, o);
+    }
+
+    this.inventoryKeyMap.clear();
+    for (const inv of this.data.inventory || []) {
+      this.inventoryKeyMap.set(`${inv.storeId}:${inv.productId}:${inv.variantId || ''}`, inv);
+    }
+  }
+
   private loadOrInitialize(): DatabaseSchema {
     try {
       if (fs.existsSync(this.storageFilePath)) {
@@ -82,6 +115,56 @@ class DatabaseManager {
           parsed.reservations = parsed.reservations || [];
           parsed.invoiceSequence = parsed.invoiceSequence || 1000;
           parsed.wishlists = parsed.wishlists || {};
+          parsed.supportTickets = parsed.supportTickets || [];
+          parsed.revokedTokens = parsed.revokedTokens || [];
+
+          // Migrate stores, zones, compliance, and products to UP + Delhi NCR if previous data had old regions
+          const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru');
+          if (hasOldStores || !parsed.stores || parsed.stores.length === 0) {
+            parsed.stores = SEED_STORES;
+            parsed.deliveryZones = SEED_DELIVERY_ZONES;
+            parsed.complianceSettings = SEED_COMPLIANCE_SETTINGS;
+            parsed.categories = SEED_CATEGORIES;
+            parsed.brands = SEED_BRANDS;
+            parsed.products = SEED_PRODUCTS;
+            // Re-generate store inventory for UP & Delhi stores
+            parsed.inventory = [];
+            for (const store of SEED_STORES) {
+              for (const product of SEED_PRODUCTS) {
+                const baseStock = product.isBestseller ? 35 : 20;
+                const stockOffset = (store.code.charCodeAt(store.code.length - 1) % 5) * 3;
+                parsed.inventory.push({
+                  id: `inv_${store.id}_${product.id}`,
+                  storeId: store.id,
+                  productId: product.id,
+                  quantity: Math.max(5, baseStock + stockOffset),
+                  reservedQuantity: 0,
+                  lowStockThreshold: 5,
+                  updatedAt: new Date().toISOString(),
+                });
+              }
+            }
+          }
+
+          // Ensure all users have profile fields initialized
+          (parsed.users || []).forEach((u: any) => {
+            if (u.isActive === undefined) u.isActive = true;
+            if (!u.preferredLanguage) u.preferredLanguage = 'en';
+            if (!u.notificationPreferences) {
+              u.notificationPreferences = {
+                orderUpdates: true,
+                promoAlerts: true,
+                deliverySms: true,
+                emailAlerts: true,
+              };
+            }
+            if (u.role === 'staff' && (!u.assignedStoreId || u.assignedStoreId === 'store_indiranagar')) {
+              u.assignedStoreId = 'store_noida_sec18';
+            }
+            if (u.jurisdiction === 'Karnataka') {
+              u.jurisdiction = 'Uttar Pradesh';
+            }
+          });
 
           // Ensure all reviews have status and verifiedPurchase normalized
           (parsed.reviews || []).forEach((r: any) => {
@@ -309,8 +392,8 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
           fullName: customer.name,
           phone: customer.phone,
           addressLine1: `${store.area} Residency`,
-          city: 'Bengaluru',
-          state: 'Karnataka',
+          city: store.city,
+          state: store.state,
           postalCode: store.postalCodes[0],
           latitude: store.latitude,
           longitude: store.longitude,
@@ -375,8 +458,8 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         userEmail: 'customer@drinkit.demo',
         userName: 'Pooja Nair',
         userPhone: '+91 98765 43213',
-        storeId: 'store_indiranagar',
-        storeName: 'DrinkIt Hub — Indiranagar Central',
+        storeId: 'store_noida_sec18',
+        storeName: 'DrinkIt Hub — Noida Sector 18 & NCR Core',
         deliveryAddress: SEED_USERS[3].addresses[0],
         items: [
           {
@@ -384,36 +467,37 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
             productName: 'Johnnie Walker Black Label 12 Year Old',
             productImage: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600&auto=format&fit=crop&q=80',
             volume: '750 ml',
-            price: 3250,
+            price: 3350,
             quantity: 1,
-            subtotal: 3250,
+            subtotal: 3350,
           },
           {
-            productId: 'prod_schweppes_ginger_ale',
-            productName: 'Schweppes Sparkling Ginger Ale (Pack of 4)',
+            productId: 'prod_schweppes_gingerale',
+            productName: 'Schweppes Sparkling Ginger Ale',
             productImage: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80',
-            volume: '4 x 250 ml',
-            price: 240,
-            quantity: 1,
-            subtotal: 240,
+            volume: '300 ml Can',
+            price: 60,
+            quantity: 2,
+            subtotal: 120,
           },
           {
-            productId: 'prod_crystal_ice_pack',
-            productName: 'Crystal Clear Food-Grade Ice Cubes (1 kg Pack)',
+            productId: 'prod_drinkit_ice_1kg',
+            name: 'DrinkIt Pure Food-Grade Crystal Ice Cubes (1 kg)',
+            productName: 'DrinkIt Pure Food-Grade Crystal Ice Cubes (1 kg)',
             productImage: 'https://images.unsplash.com/photo-1574096079513-d8259312b785?w=600&auto=format&fit=crop&q=80',
-            volume: '1000 g',
-            price: 90,
+            volume: '1 kg Pack',
+            price: 60,
             quantity: 1,
-            subtotal: 90,
+            subtotal: 60,
           }
         ],
-        subtotal: 3580,
+        subtotal: 3530,
         discount: 100,
         couponCode: 'CHEERS100',
         deliveryFee: 0,
         handlingFee: 15,
-        taxes: 180,
-        totalAmount: 3675,
+        taxes: 175,
+        totalAmount: 3620,
         paymentMethod: 'upi',
         paymentStatus: 'completed',
         paymentId: 'pay_mock_9921',
@@ -442,30 +526,30 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         userEmail: 'customer@drinkit.demo',
         userName: 'Pooja Nair',
         userPhone: '+91 98765 43213',
-        storeId: 'store_indiranagar',
-        storeName: 'DrinkIt Hub — Indiranagar Central',
+        storeId: 'store_noida_sec18',
+        storeName: 'DrinkIt Hub — Noida Sector 18 & NCR Core',
         deliveryAddress: SEED_USERS[3].addresses[0],
         items: [
           {
-            productId: 'prod_corona_extra_6pk',
-            productName: 'Corona Extra Premium Beer (Pack of 6)',
+            productId: 'prod_kf_premium',
+            productName: 'Kingfisher Premium Lager Beer',
             productImage: 'https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=600&auto=format&fit=crop&q=80',
-            volume: '6 x 330 ml',
-            price: 1350,
-            quantity: 1,
-            subtotal: 1350,
+            volume: '650 ml Bottle',
+            price: 140,
+            quantity: 3,
+            subtotal: 420,
           },
           {
-            productId: 'prod_cheese_nachos',
-            productName: 'Artisanal Corn Nachos with Cheese Dip',
-            productImage: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&auto=format&fit=crop&q=80',
-            volume: '150 g + 50 g dip',
-            price: 190,
-            quantity: 1,
-            subtotal: 190,
+            productId: 'prod_haldiram_aloo_bhujia',
+            productName: "Haldiram's Nagpur Spicy Aloo Bhujia",
+            productImage: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
+            volume: '200g Pack',
+            price: 55,
+            quantity: 2,
+            subtotal: 110,
           }
         ],
-        subtotal: 1540,
+        subtotal: 530,
         discount: 50,
         couponCode: 'WELCOME50',
         deliveryFee: 35,
@@ -601,6 +685,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(this.storageFilePath, JSON.stringify(data, null, 2), 'utf-8');
+      this.rebuildIndexes();
     } catch (e) {
       console.error('Failed to save database snapshot to disk:', e);
     }
@@ -627,7 +712,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
 
   // --- USER METHODS ---
   public findUserById(id: string): User | undefined {
-    return this.data.users.find(u => u.id === id);
+    return this.userMap.get(id) || this.data.users.find(u => u.id === id);
   }
 
   public findUserByEmail(email: string): User | undefined {
@@ -748,7 +833,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
 
   // --- PRODUCT METHODS ---
   public findProductById(id: string): Product | undefined {
-    return this.data.products.find(p => p.id === id);
+    return this.productMap.get(id) || this.data.products.find(p => p.id === id);
   }
 
   public createProduct(product: Product): Product {
@@ -819,15 +904,17 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
     productId: string,
     variantId?: string
   ): { available: number; reserved: number; total: number; lowStockThreshold: number } {
-    this.sweepExpiredReservations();
     let item = variantId
-      ? this.data.inventory.find(i => i.storeId === storeId && i.productId === productId && i.variantId === variantId)
+      ? this.inventoryKeyMap.get(`${storeId}:${productId}:${variantId}`)
       : null;
 
     if (!item) {
-      item = this.data.inventory.find(i => i.storeId === storeId && i.productId === productId && !i.variantId);
+      item = this.inventoryKeyMap.get(`${storeId}:${productId}:`);
     }
     if (!item && variantId) {
+      item = this.data.inventory.find(i => i.storeId === storeId && i.productId === productId);
+    }
+    if (!item) {
       item = this.data.inventory.find(i => i.storeId === storeId && i.productId === productId);
     }
 
@@ -1116,7 +1203,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
   }
 
   public findOrderById(id: string): Order | undefined {
-    return this.data.orders.find(o => o.id === id);
+    return this.orderMap.get(id) || this.data.orders.find(o => o.id === id);
   }
 
   public findOrderByInvoice(invoiceNumber: string): Order | undefined {
@@ -1497,12 +1584,79 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
     return notif;
   }
 
-  public markNotificationAsRead(id: string) {
+  public findNotificationById(id: string): Notification | undefined {
+    return this.data.notifications.find(x => x.id === id);
+  }
+
+  public markNotificationAsRead(id: string): boolean {
     const n = this.data.notifications.find(x => x.id === id);
     if (n) {
       n.isRead = true;
       this.persist();
+      return true;
     }
+    return false;
+  }
+
+  // --- TOKEN REVOCATION ---
+  public revokeToken(token: string) {
+    if (!this.data.revokedTokens) this.data.revokedTokens = [];
+    if (!this.data.revokedTokens.includes(token)) {
+      this.data.revokedTokens.push(token);
+      this.persist();
+    }
+  }
+
+  public isTokenRevoked(token: string): boolean {
+    if (!this.data.revokedTokens) return false;
+    return this.data.revokedTokens.includes(token);
+  }
+
+  // --- SUPPORT TICKETS ---
+  public getSupportTickets(): SupportTicket[] {
+    return this.data.supportTickets || [];
+  }
+
+  public findSupportTicketById(id: string): SupportTicket | undefined {
+    return (this.data.supportTickets || []).find(t => t.id === id);
+  }
+
+  public getUserSupportTickets(userId: string): SupportTicket[] {
+    return (this.data.supportTickets || []).filter(t => t.userId === userId);
+  }
+
+  public createSupportTicket(ticket: SupportTicket): SupportTicket {
+    if (!this.data.supportTickets) this.data.supportTickets = [];
+    this.data.supportTickets.unshift(ticket);
+    this.logAudit(ticket.userId, ticket.userName, 'customer', 'SUPPORT_TICKET_CREATED', 'SupportTicket', ticket.id, `Created ticket ${ticket.ticketNumber}: ${ticket.subject}`);
+    this.persist();
+    return ticket;
+  }
+
+  public addSupportTicketMessage(ticketId: string, message: SupportTicketMessage, newStatus?: SupportTicket['status']): SupportTicket | null {
+    if (!this.data.supportTickets) return null;
+    const ticket = this.data.supportTickets.find(t => t.id === ticketId);
+    if (!ticket) return null;
+    ticket.messages.push(message);
+    ticket.updatedAt = new Date().toISOString();
+    if (newStatus) {
+      ticket.status = newStatus;
+    }
+    this.persist();
+    return ticket;
+  }
+
+  public updateSupportTicketStatus(ticketId: string, status: SupportTicket['status'], actor?: { id: string; name: string; role: string }): SupportTicket | null {
+    if (!this.data.supportTickets) return null;
+    const ticket = this.data.supportTickets.find(t => t.id === ticketId);
+    if (!ticket) return null;
+    ticket.status = status;
+    ticket.updatedAt = new Date().toISOString();
+    if (actor) {
+      this.logAudit(actor.id, actor.name, actor.role, 'SUPPORT_TICKET_STATUS_UPDATED', 'SupportTicket', ticket.id, `Status updated to ${status}`);
+    }
+    this.persist();
+    return ticket;
   }
 
   public saveToFile() {

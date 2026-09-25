@@ -1,12 +1,18 @@
 import 'dotenv/config';
+import http from 'http';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { createExpressApp } from './server/app.ts';
+import { socketService } from './server/services/socketService.ts';
 
 async function startServer() {
   const app = createExpressApp();
+  const httpServer = http.createServer(app);
   const PORT = 3000;
+
+  // Initialize secure real-time Socket.IO subsystem
+  socketService.init(httpServer);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
@@ -23,7 +29,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`⚡ DRINKIT Quick-Commerce Platform online on http://0.0.0.0:${PORT}`);
   });
 }

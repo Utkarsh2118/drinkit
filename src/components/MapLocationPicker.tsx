@@ -124,11 +124,11 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
     const loc: LocationState = {
       label: geocodedAddress?.label || `Pin (${position.lat.toFixed(4)}, ${position.lng.toFixed(4)})`,
       addressLine: geocodedAddress?.addressLine || geocodedAddress?.formattedAddress || `Lat: ${position.lat}, Lon: ${position.lng}`,
-      postalCode: geocodedAddress?.postalCode || '560038',
+      postalCode: geocodedAddress?.postalCode || '201301',
       latitude: position.lat,
       longitude: position.lng,
-      city: geocodedAddress?.city,
-      state: geocodedAddress?.state,
+      city: geocodedAddress?.city || 'Noida',
+      state: geocodedAddress?.state || 'Uttar Pradesh',
     };
     onConfirmLocation(loc);
   };
@@ -303,7 +303,7 @@ export const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
             <div>
               <span className="font-bold">DrinkIt isn't available at this location yet.</span>
               <p className="text-[11px] text-amber-700 mt-0.5">
-                We're not delivering to this location yet. Please drag the pin into our active fulfillment area in Bengaluru or LPU/Phagwara.
+                We're not delivering to this location yet. Please drag the pin into our active fulfillment areas in Uttar Pradesh & Delhi NCR (Noida, Delhi, Lucknow, Ghaziabad, Kanpur, Agra, Varanasi).
               </p>
             </div>
           </div>

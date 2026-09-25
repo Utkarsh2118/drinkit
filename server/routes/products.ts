@@ -198,7 +198,7 @@ router.get('/', (req, res) => {
   }
 
   // Attach store stock if storeId is provided
-  const targetStoreId = String(storeId || 'store_indiranagar');
+  const targetStoreId = String(storeId || 'store_noida_sec18');
   const enrichedProducts = products.map(product => {
     const stockInfo = db.getStoreStock(targetStoreId, product.id);
     return {
@@ -248,7 +248,7 @@ router.get('/:id', (req, res) => {
     return res.status(404).json({ success: false, message: 'Product not found' });
   }
 
-  const storeId = String(req.query.storeId || 'store_indiranagar');
+  const storeId = String(req.query.storeId || 'store_noida_sec18');
   const stockInfo = db.getStoreStock(storeId, product.id);
   const reviews = db.getReviews().filter(r => r.productId === product.id);
 

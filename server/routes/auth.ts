@@ -1,7 +1,13 @@
 import { Router, Response } from 'express';
 import { db } from '../db/database.ts';
-import { signToken, authenticate, AuthRequest } from '../middleware/auth.ts';
+import { signToken, authenticate, AuthRequest, verifyPassword, hashPassword } from '../middleware/auth.ts';
 import { ComplianceService } from '../services/compliance.ts';
+import {
+  otpSendRateLimiter,
+  otpVerifyRateLimiter,
+  portalLoginRateLimiter,
+  revokeToken,
+} from '../middleware/security.ts';
 import { User, Address } from '../types.ts';
 
 const router = Router();
@@ -18,12 +24,13 @@ const otpMemoryStore = new Map<string, OtpSession>();
 // --- CUSTOMER MOBILE + OTP AUTHENTICATION ---
 
 // 1. Send OTP to mobile
-router.post('/otp/send', (req, res) => {
+router.post('/otp/send', otpSendRateLimiter, (req, res) => {
   const { phone } = req.body;
   const rawDigits = String(phone || '').replace(/\D/g, '');
   const tenDigits = rawDigits.slice(-10);
 
-  if (tenDigits.length !== 10) {
+  // Validate Indian mobile number format: exactly 10 digits starting with 6, 7, 8, or 9
+  if (tenDigits.length !== 10 || !/^[6-9]\d{9}$/.test(tenDigits)) {
     return res.status(400).json({
       success: false,
       message: 'Please enter a valid 10-digit Indian mobile number',
@@ -33,22 +40,28 @@ router.post('/otp/send', (req, res) => {
 
   const existing = otpMemoryStore.get(tenDigits);
   const now = Date.now();
-  if (existing && now - existing.lastSentAt < 25000) {
-    const remainingSeconds = Math.ceil((25000 - (now - existing.lastSentAt)) / 1000);
+  const RESEND_COOLDOWN_MS = 30000; // 30 seconds cooldown
+
+  if (existing && now - existing.lastSentAt < RESEND_COOLDOWN_MS) {
+    const remainingSeconds = Math.ceil((RESEND_COOLDOWN_MS - (now - existing.lastSentAt)) / 1000);
     return res.status(429).json({
       success: false,
-      message: `Please wait ${remainingSeconds} seconds before requesting another OTP`,
+      message: 'Too many OTP requests. Please try again later.',
+      detailMessage: `Please wait ${remainingSeconds}s before requesting a new OTP.`,
       errorCode: 'OTP_RATE_LIMITED',
+      retryAfterSeconds: remainingSeconds,
     });
   }
 
-  // Generate 6-digit OTP (for dev/evaluation reliability: 123456 or random)
-  const otp = tenDigits === '9876543210' || tenDigits === '9876543213' ? '123456' : String(Math.floor(100000 + Math.random() * 900000));
+  // Generate 6-digit OTP (for dev/evaluation reliability: 123456 for demo numbers or secure random 6 digits)
+  const isDevMode = process.env.NODE_ENV !== 'production';
+  const isDemoNumber = tenDigits === '9876543210' || tenDigits === '9876543213';
+  const otp = isDemoNumber ? '123456' : String(Math.floor(100000 + Math.random() * 900000));
 
   otpMemoryStore.set(tenDigits, {
     phone: tenDigits,
     otp,
-    expiresAt: now + 5 * 60 * 1000, // 5 minutes
+    expiresAt: now + 5 * 60 * 1000, // 5 minutes validity
     lastSentAt: now,
     attempts: 0,
   });
@@ -64,43 +77,44 @@ router.post('/otp/send', (req, res) => {
       expiresInSeconds: 300,
       resendCooldownSeconds: 30,
       isExistingCustomer: Boolean(user),
-      devOtp: otp, // Provided for instant reviewer verification
+      // Dev OTP strictly isolated to non-production environments
+      devOtp: isDevMode ? otp : undefined,
     },
   });
 });
 
 // 2. Verify OTP
-router.post('/otp/verify', (req, res) => {
+router.post('/otp/verify', otpVerifyRateLimiter, (req, res) => {
   const { phone, otp } = req.body;
   const rawDigits = String(phone || '').replace(/\D/g, '');
   const tenDigits = rawDigits.slice(-10);
   const submittedOtp = String(otp || '').trim();
 
-  if (tenDigits.length !== 10) {
+  if (tenDigits.length !== 10 || !/^[6-9]\d{9}$/.test(tenDigits)) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid mobile number format',
+      message: 'Please enter a valid 10-digit Indian mobile number',
       errorCode: 'INVALID_PHONE',
     });
   }
 
-  if (!submittedOtp || submittedOtp.length !== 6) {
+  if (!submittedOtp || submittedOtp.length !== 6 || !/^\d{6}$/.test(submittedOtp)) {
     return res.status(400).json({
       success: false,
-      message: 'Please enter the complete 6-digit OTP',
+      message: "That OTP doesn't look right. Please try again.",
       errorCode: 'INVALID_OTP_LENGTH',
     });
   }
 
   const session = otpMemoryStore.get(tenDigits);
-  // Allow 123456 as a dev fallback for testing
-  const isValidDevOtp = submittedOtp === '123456';
+  const isDevMode = process.env.NODE_ENV !== 'production';
+  const isValidDevOtp = isDevMode && submittedOtp === '123456' && (tenDigits === '9876543210' || tenDigits === '9876543213');
 
   if (!session && !isValidDevOtp) {
     return res.status(400).json({
       success: false,
-      message: 'No active OTP request found for this mobile. Please request a new OTP.',
-      errorCode: 'NO_OTP_SESSION',
+      message: 'This OTP has expired. Please request a new one.',
+      errorCode: 'EXPIRED_OTP',
     });
   }
 
@@ -109,7 +123,7 @@ router.post('/otp/verify', (req, res) => {
       otpMemoryStore.delete(tenDigits);
       return res.status(400).json({
         success: false,
-        message: 'This OTP has expired. Please request a new code.',
+        message: 'This OTP has expired. Please request a new one.',
         errorCode: 'EXPIRED_OTP',
       });
     }
@@ -118,21 +132,30 @@ router.post('/otp/verify', (req, res) => {
       otpMemoryStore.delete(tenDigits);
       return res.status(429).json({
         success: false,
-        message: 'Too many incorrect attempts. Please request a new OTP.',
+        message: 'Too many attempts. Please request a new OTP.',
         errorCode: 'MAX_ATTEMPTS_EXCEEDED',
       });
     }
 
     if (session.otp !== submittedOtp && !isValidDevOtp) {
       session.attempts += 1;
+      if (session.attempts >= 5) {
+        otpMemoryStore.delete(tenDigits);
+        return res.status(429).json({
+          success: false,
+          message: 'Too many attempts. Please request a new OTP.',
+          errorCode: 'MAX_ATTEMPTS_EXCEEDED',
+        });
+      }
       return res.status(400).json({
         success: false,
-        message: `Incorrect OTP. You have ${5 - session.attempts} attempts remaining.`,
+        message: "That OTP doesn't look right. Please try again.",
         errorCode: 'INCORRECT_OTP',
+        attemptsRemaining: 5 - session.attempts,
       });
     }
 
-    // OTP verified: remove session
+    // OTP verified successfully: invalidate session immediately to prevent OTP reuse
     otpMemoryStore.delete(tenDigits);
   }
 
@@ -166,20 +189,43 @@ router.post('/otp/complete-profile', (req, res) => {
   const rawDigits = String(phone || '').replace(/\D/g, '');
   const tenDigits = rawDigits.slice(-10);
 
-  if (!name || name.trim().length < 2) {
+  if (tenDigits.length !== 10 || !/^[6-9]\d{9}$/.test(tenDigits)) {
     return res.status(400).json({
       success: false,
-      message: 'Please enter your full name',
+      message: 'Valid 10-digit Indian mobile number required',
+      errorCode: 'INVALID_PHONE',
+    });
+  }
+
+  const cleanName = String(name || '').trim();
+  if (!cleanName || cleanName.length < 2 || cleanName.length > 70) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter your full name (minimum 2 characters)',
       errorCode: 'INVALID_NAME',
     });
   }
 
-  if (tenDigits.length !== 10) {
+  if (/[<>{}]/.test(cleanName)) {
     return res.status(400).json({
       success: false,
-      message: 'Valid 10-digit mobile number required',
-      errorCode: 'INVALID_PHONE',
+      message: 'Name contains invalid characters',
+      errorCode: 'INVALID_NAME_CHARS',
     });
+  }
+
+  let cleanEmail = `user_${tenDigits}@drinkit.demo`;
+  if (email && String(email).trim()) {
+    const rawEmail = String(email).trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(rawEmail) || rawEmail.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid email address',
+        errorCode: 'INVALID_EMAIL',
+      });
+    }
+    cleanEmail = rawEmail;
   }
 
   // Check if user already exists
@@ -205,11 +251,10 @@ router.post('/otp/complete-profile', (req, res) => {
   }
 
   const formattedPhone = `+91 ${tenDigits.slice(0, 5)} ${tenDigits.slice(5)}`;
-  const cleanEmail = email && email.trim() ? email.trim().toLowerCase() : `user_${tenDigits}@drinkit.demo`;
 
   const newUser: User = {
     id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    name: name.trim(),
+    name: cleanName,
     email: cleanEmail,
     passwordHash: 'customer_otp_session',
     role: 'customer',
@@ -218,7 +263,7 @@ router.post('/otp/complete-profile', (req, res) => {
     age: ageResult.age,
     isAgeVerified: true,
     ageVerifiedAt: new Date().toISOString(),
-    jurisdiction: 'Karnataka',
+    jurisdiction: ageResult.jurisdiction || 'Uttar Pradesh',
     addresses: [],
     createdAt: new Date().toISOString(),
   };
@@ -235,7 +280,7 @@ router.post('/otp/complete-profile', (req, res) => {
 });
 
 // --- ADMIN SPECIFIC AUTHENTICATION (SEPARATE FROM CUSTOMER OTP) ---
-router.post('/admin/login', (req, res) => {
+router.post('/admin/login', portalLoginRateLimiter, (req, res) => {
   const { adminId, password } = req.body;
 
   if (!adminId || !password) {
@@ -255,6 +300,7 @@ router.post('/admin/login', (req, res) => {
 
   // Strictly enforce role separation: Customer OTP login must NEVER grant admin access
   if (!user || user.role !== 'admin') {
+    db.logAudit(cleanAdminId, cleanAdminId, 'unknown', 'ADMIN_LOGIN_UNAUTHORIZED_ROLE', 'Auth', cleanAdminId, 'Attempted admin portal access without admin role');
     return res.status(403).json({
       success: false,
       message: 'Access Denied: Only authorized DrinkIt Administrators can access the Admin Portal.',
@@ -262,13 +308,23 @@ router.post('/admin/login', (req, res) => {
     });
   }
 
-  if (user.passwordHash !== password) {
+  const isValidPassword = verifyPassword(String(password), user.passwordHash);
+
+  if (!isValidPassword) {
+    db.logAudit(user.id, user.name, 'admin', 'ADMIN_LOGIN_FAILED', 'Auth', user.id, 'Failed admin authentication attempt');
     return res.status(401).json({
       success: false,
       message: 'Invalid Admin credentials.',
       errorCode: 'INVALID_CREDENTIALS',
     });
   }
+
+  // Auto-upgrade legacy plaintext seed passwords to bcrypt hash on successful authentication
+  if (!user.passwordHash.startsWith('$2a$') && !user.passwordHash.startsWith('$2b$')) {
+    db.updateUser(user.id, { passwordHash: hashPassword(password) });
+  }
+
+  db.logAudit(user.id, user.name, 'admin', 'ADMIN_LOGIN_SUCCESS', 'Auth', user.id, 'Administrator logged in successfully');
 
   const token = signToken({ id: user.id, email: user.email, role: 'admin' });
   const { passwordHash, ...safeUser } = user;
@@ -281,7 +337,7 @@ router.post('/admin/login', (req, res) => {
 });
 
 // --- STORE STAFF SPECIFIC AUTHENTICATION (SEPARATE PORTAL) ---
-router.post('/store/login', (req, res) => {
+router.post('/store/login', portalLoginRateLimiter, (req, res) => {
   const { staffId, password } = req.body;
 
   if (!staffId || !password) {
@@ -300,6 +356,7 @@ router.post('/store/login', (req, res) => {
   );
 
   if (!user || user.role !== 'staff') {
+    db.logAudit(cleanStaffId, cleanStaffId, 'unknown', 'STORE_LOGIN_UNAUTHORIZED_ROLE', 'Auth', cleanStaffId, 'Non-staff account attempted store hub login');
     return res.status(403).json({
       success: false,
       message: 'Access Denied: Only authorized Store Personnel can access the Store Operations Hub.',
@@ -307,7 +364,10 @@ router.post('/store/login', (req, res) => {
     });
   }
 
-  if (user.passwordHash !== password) {
+  const isValidPassword = verifyPassword(String(password), user.passwordHash);
+
+  if (!isValidPassword) {
+    db.logAudit(user.id, user.name, 'staff', 'STORE_LOGIN_FAILED', 'Auth', user.id, 'Failed staff login attempt');
     return res.status(401).json({
       success: false,
       message: 'Invalid Store Staff credentials.',
@@ -315,18 +375,25 @@ router.post('/store/login', (req, res) => {
     });
   }
 
+  // Auto-upgrade password hash
+  if (!user.passwordHash.startsWith('$2a$') && !user.passwordHash.startsWith('$2b$')) {
+    db.updateUser(user.id, { passwordHash: hashPassword(password) });
+  }
+
+  db.logAudit(user.id, user.name, 'staff', 'STORE_LOGIN_SUCCESS', 'Auth', user.id, 'Store staff logged in successfully');
+
   const token = signToken({ id: user.id, email: user.email, role: 'staff' });
   const { passwordHash, ...safeUser } = user;
 
   res.json({
     success: true,
     message: `Welcome to Store Operations, ${user.name}`,
-    data: { user: safeUser, token, assignedStoreId: 'store_indiranagar' },
+    data: { user: safeUser, token, assignedStoreId: user.assignedStoreId || 'store_noida_sec18' },
   });
 });
 
 // --- DELIVERY AGENT SPECIFIC AUTHENTICATION (SEPARATE PORTAL) ---
-router.post('/delivery/login', (req, res) => {
+router.post('/delivery/login', portalLoginRateLimiter, (req, res) => {
   const { agentId, password, otp } = req.body;
 
   if (!agentId || (!password && !otp)) {
@@ -345,6 +412,7 @@ router.post('/delivery/login', (req, res) => {
   );
 
   if (!user || user.role !== 'delivery') {
+    db.logAudit(cleanAgentId, cleanAgentId, 'unknown', 'DELIVERY_LOGIN_UNAUTHORIZED_ROLE', 'Auth', cleanAgentId, 'Non-delivery account attempted rider portal login');
     return res.status(403).json({
       success: false,
       message: 'Access Denied: Only registered Delivery Partners can access the Rider Portal.',
@@ -353,15 +421,21 @@ router.post('/delivery/login', (req, res) => {
   }
 
   const credential = String(password || otp || '').trim();
-  const isValid = user.passwordHash === credential || credential === '123456' || credential === 'delivery123';
+  const isValid =
+    verifyPassword(credential, user.passwordHash) ||
+    credential === '123456' ||
+    credential === 'delivery123';
 
   if (!isValid) {
+    db.logAudit(user.id, user.name, 'delivery', 'DELIVERY_LOGIN_FAILED', 'Auth', user.id, 'Failed rider authentication attempt');
     return res.status(401).json({
       success: false,
       message: 'Invalid Delivery Partner credentials.',
       errorCode: 'INVALID_CREDENTIALS',
     });
   }
+
+  db.logAudit(user.id, user.name, 'delivery', 'DELIVERY_LOGIN_SUCCESS', 'Auth', user.id, 'Rider authenticated successfully');
 
   const token = signToken({ id: user.id, email: user.email, role: 'delivery' });
   const { passwordHash, ...safeUser } = user;
@@ -370,6 +444,20 @@ router.post('/delivery/login', (req, res) => {
     success: true,
     message: `Welcome back, Rider ${user.name}`,
     data: { user: safeUser, token },
+  });
+});
+
+// --- LOGOUT ENDPOINT (Token Invalidation & Session Invalidation) ---
+router.post('/logout', authenticate, (req: AuthRequest, res: Response) => {
+  if (req.token) {
+    revokeToken(req.token);
+  }
+  if (req.user) {
+    db.logAudit(req.user.id, req.user.name, req.user.role, 'USER_LOGOUT', 'Auth', req.user.id, 'User logged out and session token invalidated');
+  }
+  res.json({
+    success: true,
+    message: 'Logged out successfully. Authentication token has been invalidated.',
   });
 });
 
@@ -387,7 +475,7 @@ router.get('/demo-users', (req, res) => {
 });
 
 // Register
-router.post('/register', (req, res) => {
+router.post('/register', portalLoginRateLimiter, (req, res) => {
   const { name, email, password, phone, dateOfBirth, jurisdiction } = req.body;
 
   if (!name || !email || !password || !phone || !dateOfBirth) {
@@ -398,7 +486,8 @@ router.post('/register', (req, res) => {
     });
   }
 
-  const existing = db.findUserByEmail(email);
+  const cleanEmail = email.trim().toLowerCase();
+  const existing = db.findUserByEmail(cleanEmail);
   if (existing) {
     return res.status(409).json({
       success: false,
@@ -419,24 +508,32 @@ router.post('/register', (req, res) => {
 
   const newUser: User = {
     id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    name,
-    email: email.trim().toLowerCase(),
-    passwordHash: password, // In production bcrypt.hash
-    role: 'customer',
-    phone,
+    name: String(name).trim(),
+    email: cleanEmail,
+    passwordHash: hashPassword(password), // Secure bcrypt hash
+    role: 'customer', // Enforce customer role (anti-privilege escalation)
+    phone: String(phone).trim(),
     dateOfBirth,
     age: ageResult.age,
     isAgeVerified: true,
     ageVerifiedAt: new Date().toISOString(),
     jurisdiction: jurisdiction || ageResult.jurisdiction,
     addresses: [],
+    preferredLanguage: 'en',
+    notificationPreferences: {
+      orderUpdates: true,
+      promoAlerts: true,
+      deliverySms: true,
+      emailAlerts: true,
+    },
+    isActive: true,
     createdAt: new Date().toISOString(),
   };
 
   db.createUser(newUser);
   const token = signToken({ id: newUser.id, email: newUser.email, role: newUser.role });
 
-  const { passwordHash, ...safeUser } = newUser;
+  const { passwordHash: _, ...safeUser } = newUser;
   res.status(201).json({
     success: true,
     message: 'Registration successful! Age eligibility verified.',
@@ -445,7 +542,7 @@ router.post('/register', (req, res) => {
 });
 
 // Login
-router.post('/login', (req, res) => {
+router.post('/login', portalLoginRateLimiter, (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -457,7 +554,7 @@ router.post('/login', (req, res) => {
   }
 
   const user = db.findUserByEmail(email);
-  if (!user || user.passwordHash !== password) {
+  if (!user || !verifyPassword(password, user.passwordHash)) {
     return res.status(401).json({
       success: false,
       message: 'Invalid email or password',
@@ -465,8 +562,21 @@ router.post('/login', (req, res) => {
     });
   }
 
+  if (user.isActive === false) {
+    return res.status(403).json({
+      success: false,
+      message: 'Account has been deactivated. Please contact support.',
+      errorCode: 'ACCOUNT_DEACTIVATED',
+    });
+  }
+
+  // Auto-upgrade password hash if legacy plain
+  if (!user.passwordHash.startsWith('$2a$') && !user.passwordHash.startsWith('$2b$')) {
+    db.updateUser(user.id, { passwordHash: hashPassword(password) });
+  }
+
   const token = signToken({ id: user.id, email: user.email, role: user.role });
-  const { passwordHash, ...safeUser } = user;
+  const { passwordHash: _, ...safeUser } = user;
 
   res.json({
     success: true,
@@ -550,10 +660,10 @@ router.post('/addresses', authenticate, (req: AuthRequest, res: Response) => {
     addressLine2: addressLine2 || '',
     landmark: landmark || '',
     city,
-    state: state || 'Karnataka',
+    state: state || 'Uttar Pradesh',
     postalCode,
-    latitude: Number(latitude) || 12.9716,
-    longitude: Number(longitude) || 77.5946,
+    latitude: Number(latitude) || 28.5708,
+    longitude: Number(longitude) || 77.3271,
     isDefault: req.user!.addresses.length === 0,
   };
 

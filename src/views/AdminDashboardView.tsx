@@ -18,8 +18,13 @@ import {
 } from 'lucide-react';
 import { Product, Store, PlatformComplianceSettings } from '../types.ts';
 import { api } from '../services/api.ts';
-import { AnalyticsTab } from '../components/admin/AnalyticsTab.tsx';
-import { CouponsTab } from '../components/admin/CouponsTab.tsx';
+
+const AnalyticsTab = React.lazy(() =>
+  import('../components/admin/AnalyticsTab.tsx').then(m => ({ default: m.AnalyticsTab }))
+);
+const CouponsTab = React.lazy(() =>
+  import('../components/admin/CouponsTab.tsx').then(m => ({ default: m.CouponsTab }))
+);
 
 export const AdminDashboardView: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -203,12 +208,30 @@ export const AdminDashboardView: React.FC = () => {
 
       {/* Tab 1: Comprehensive Recharts Analytics Visualizations */}
       {activeTab === 'analytics' && (
-        <AnalyticsTab onRefreshTrigger={fetchAdminData} />
+        <React.Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-slate-200">
+              <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-xs font-bold text-slate-600">Loading Telemetry & Analytics Dashboard...</p>
+            </div>
+          }
+        >
+          <AnalyticsTab onRefreshTrigger={fetchAdminData} />
+        </React.Suspense>
       )}
 
       {/* Tab 2: Advanced Rule-Based Coupon Engine */}
       {activeTab === 'coupons' && (
-        <CouponsTab />
+        <React.Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-slate-200">
+              <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-xs font-bold text-slate-600">Loading Promotional Rules Engine...</p>
+            </div>
+          }
+        >
+          <CouponsTab />
+        </React.Suspense>
       )}
 
       {/* Tab 3: Catalog CRUD */}
@@ -375,79 +398,236 @@ export const AdminDashboardView: React.FC = () => {
 
       {/* Tab 4: Excise & Compliance */}
       {activeTab === 'compliance' && compliance && (
-        <div className="max-w-2xl space-y-5 p-6 rounded-3xl bg-white border border-slate-200 shadow-xs">
-          <div>
+        <div className="max-w-3xl space-y-6 p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-xs">
+          <div className="border-b border-slate-100 pb-4">
             <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>State Excise Compliance & Legal Age Configuration</span>
+              <span>State Excise Compliance & Legal Control Settings</span>
             </h3>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Enforce state-mandated alcohol control laws across checkout and dispatch
+              Enforce state-mandated alcohol control laws, maximum limits, operating hours & statutory verifications
             </p>
           </div>
 
-          <div className="space-y-4 text-xs">
-            <div>
-              <label className="block text-slate-700 font-bold mb-1">
-                Legal Drinking Age (Years)
-              </label>
-              <input
-                type="number"
-                value={compliance.legalDrinkingAge}
-                onChange={e =>
-                  setCompliance({ ...compliance, legalDrinkingAge: Number(e.target.value) })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
-              />
-              <span className="text-[10px] text-slate-400">21 in Karnataka; 25 in Delhi/Maharashtra</span>
+          <div className="space-y-5 text-xs">
+            {/* Jurisdiction & Legal Age */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Active Legal Jurisdiction
+                </label>
+                <input
+                  type="text"
+                  value={compliance.jurisdiction || ''}
+                  onChange={e =>
+                    setCompliance({ ...compliance, jurisdiction: e.target.value })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
+                  placeholder="e.g. Karnataka, India (State Excise Act)"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">Displayed on tax invoices & statutory declarations</span>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Legal Drinking Age (Years)
+                </label>
+                <input
+                  type="number"
+                  min="18"
+                  max="30"
+                  value={compliance.legalDrinkingAge}
+                  onChange={e =>
+                    setCompliance({ ...compliance, legalDrinkingAge: Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">21 in Karnataka/Goa; 25 in Delhi/Maharashtra</span>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-slate-700 font-bold mb-1">
-                Maximum Alcoholic Bottles Per Order
-              </label>
-              <input
-                type="number"
-                value={compliance.maxBottlesPerOrder}
-                onChange={e =>
-                  setCompliance({ ...compliance, maxBottlesPerOrder: Number(e.target.value) })
-                }
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
-              />
-              <span className="text-[10px] text-slate-400">State retail carry limit</span>
+            {/* Statutory Order Limits */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Max Alcoholic Bottles Per Order
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={compliance.maxBottlesPerOrder}
+                  onChange={e =>
+                    setCompliance({ ...compliance, maxBottlesPerOrder: Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">State retail individual carry limitation (typically 6)</span>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Max Total Volume (Litres Per Order)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  max="50"
+                  value={compliance.maxVolumeLitresPerOrder || 9}
+                  onChange={e =>
+                    setCompliance({ ...compliance, maxVolumeLitresPerOrder: Number(e.target.value) })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">Aggregate spirit & beer transport ceiling (9.0L in Karnataka)</span>
+              </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            {/* Operating Delivery Hours */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={compliance.operatingHoursOnly}
+                  onChange={e => setCompliance({ ...compliance, operatingHoursOnly: e.target.checked })}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span className="font-extrabold text-slate-900 text-xs">
+                  Enforce Permitted Delivery Hours (Excise Curfew)
+                </span>
+              </label>
+              <p className="text-[11px] text-slate-500 font-medium">
+                When enabled, alcohol purchases outside permitted state excise delivery hours are strictly blocked.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    Excise Opening Time (HH:MM)
+                  </label>
+                  <input
+                    type="time"
+                    value={compliance.operatingHoursStart || '10:00'}
+                    onChange={e => setCompliance({ ...compliance, operatingHoursStart: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    Excise Cutoff Time (HH:MM)
+                  </label>
+                  <input
+                    type="time"
+                    value={compliance.operatingHoursEnd || '22:30'}
+                    onChange={e => setCompliance({ ...compliance, operatingHoursEnd: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dry Day Emergency Lockout */}
+            <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200 space-y-2">
               <label className="flex items-center gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={compliance.dryDayActive}
                   onChange={e => setCompliance({ ...compliance, dryDayActive: e.target.checked })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  className="rounded border-rose-400 text-rose-600 focus:ring-rose-500 w-4 h-4"
                 />
-                <span className="font-extrabold text-slate-900 text-xs">
-                  Declare Dry Day (Emergency Alcohol Lockout)
+                <span className="font-extrabold text-rose-900 text-xs">
+                  Declare Dry Day (Immediate Platform Alcohol Lockout)
                 </span>
               </label>
-              <p className="text-[11px] text-slate-500 font-medium">
-                When active, the platform strictly blocks all alcohol purchases across all stores in compliance with state election or national holidays.
+              <p className="text-[11px] text-rose-700 font-medium">
+                When active, the platform halts all alcohol checkouts across all stores and informs customers in compliance with election notifications or national dry day mandates.
               </p>
               {compliance.dryDayActive && (
                 <input
                   type="text"
-                  placeholder="Reason for Dry Day (e.g. State Election Day / National Holiday)"
+                  placeholder="Reason for Dry Day (e.g. State General Election Day / Gandhi Jayanti)"
                   value={compliance.dryDayReason || ''}
                   onChange={e => setCompliance({ ...compliance, dryDayReason: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-rose-300 text-rose-800 font-bold"
+                  className="w-full px-3 py-2.5 rounded-xl bg-white border border-rose-300 text-rose-900 font-bold placeholder:text-rose-300"
                 />
               )}
             </div>
 
+            {/* Doorstep ID Verification & Postal Restrictions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={compliance.requireIdProofAtDoorstep}
+                    onChange={e => setCompliance({ ...compliance, requireIdProofAtDoorstep: e.target.checked })}
+                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span className="font-extrabold text-slate-900 text-xs">
+                    Mandatory Doorstep ID Proof
+                  </span>
+                </label>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Delivery agent must physically verify Government Photo ID (Aadhaar/DL) before OTP handover.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Restricted / Prohibited Postal Codes
+                </label>
+                <input
+                  type="text"
+                  value={(compliance.restrictedPostalCodes || []).join(', ')}
+                  onChange={e =>
+                    setCompliance({
+                      ...compliance,
+                      restrictedPostalCodes: e.target.value
+                        .split(',')
+                        .map(s => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
+                  placeholder="560099, 560105"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">Comma-separated postal codes where alcohol delivery is legally barred</span>
+              </div>
+            </div>
+
+            {/* License Identification */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  State Excise Retail License Number
+                </label>
+                <input
+                  type="text"
+                  value={compliance.exciseLicenseNumber || ''}
+                  onChange={e => setCompliance({ ...compliance, exciseLicenseNumber: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-semibold"
+                  placeholder="KA-EXC-2026-RET-8842"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  License Validity Date
+                </label>
+                <input
+                  type="date"
+                  value={compliance.exciseLicenseValidUntil || '2027-03-31'}
+                  onChange={e => setCompliance({ ...compliance, exciseLicenseValidUntil: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold"
+                />
+              </div>
+            </div>
+
             <button
               onClick={handleSaveCompliance}
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider shadow-xs transition-colors"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all active:scale-99"
             >
-              Save Excise Settings
+              Save & Apply Statutory Excise Rules
             </button>
           </div>
         </div>

@@ -1,5 +1,12 @@
 export type UserRole = 'customer' | 'staff' | 'delivery' | 'admin';
 
+export interface NotificationPreferences {
+  orderUpdates: boolean;
+  promoAlerts: boolean;
+  deliverySms: boolean;
+  emailAlerts: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -7,6 +14,11 @@ export interface User {
   passwordHash: string;
   role: UserRole;
   phone: string;
+  avatarUrl?: string;
+  preferredLanguage?: 'en' | 'kn' | 'hi';
+  notificationPreferences?: NotificationPreferences;
+  isActive?: boolean;
+  assignedStoreId?: string; // For staff
   dateOfBirth?: string; // YYYY-MM-DD
   age?: number;
   isAgeVerified: boolean;
@@ -14,6 +26,33 @@ export interface User {
   jurisdiction?: string;
   addresses: Address[];
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SupportTicketMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole | string;
+  message: string;
+  timestamp: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+  orderId?: string;
+  category: 'order' | 'delivery' | 'payment' | 'product' | 'account' | 'other';
+  subject: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  messages: SupportTicketMessage[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Address {
@@ -360,14 +399,47 @@ export interface DeliveryZone {
   baseDeliveryFee: number;
 }
 
+export type VerificationStatus = 'NOT_VERIFIED' | 'PENDING' | 'VERIFIED' | 'EXPIRED' | 'FAILED';
+
+export interface VerificationRecord {
+  status: VerificationStatus;
+  verifiedAt: string;
+  verifiedAge: number;
+  jurisdiction: string;
+  method: 'SELF_DECLARATION_WITH_DOB' | 'GOVT_PHOTO_ID' | 'DOORSTEP_VERIFICATION';
+  documentType?: 'AADHAAR' | 'DRIVING_LICENSE' | 'PASSPORT' | 'VOTER_ID' | 'NONE';
+  expiresAt: string;
+}
+
+export interface JurisdictionRule {
+  id: string;
+  stateCode: string;
+  stateName: string;
+  minimumAgeSpirits: number;
+  minimumAgeBeerWine: number;
+  maxLitresPerOrder: number;
+  maxBottlesPerOrder: number;
+  operatingHoursStart: string;
+  operatingHoursEnd: string;
+  allowedPostalCodesPrefix?: string[];
+  restrictedPostalCodes?: string[];
+}
+
 export interface PlatformComplianceSettings {
   legalDrinkingAge: number; // e.g. 21 or 25
-  jurisdiction: string; // "India (Karnataka)", etc.
+  jurisdiction: string; // "Karnataka, India (State Excise Act Compliant)", etc.
   dryDayActive: boolean;
   dryDayReason?: string;
   maxBottlesPerOrder: number;
+  maxVolumeLitresPerOrder: number;
   operatingHoursOnly: boolean;
+  operatingHoursStart: string; // "10:00"
+  operatingHoursEnd: string;   // "22:30"
   requireIdProofAtDoorstep: boolean;
+  verificationExpiryDays: number;
+  restrictedPostalCodes: string[];
+  exciseLicenseNumber: string;
+  exciseLicenseValidUntil: string;
 }
 
 export interface AuditLog {

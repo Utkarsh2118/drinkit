@@ -4,6 +4,7 @@ import { Order } from '../types.ts';
 import { api } from '../services/api.ts';
 import { useCart } from '../context/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useRouter } from '../context/RouterContext.tsx';
 
 interface OrdersViewProps {
   onTrackOrder: (orderId: string) => void;
@@ -12,11 +13,16 @@ interface OrdersViewProps {
 
 export const OrdersView: React.FC<OrdersViewProps> = ({ onTrackOrder, onBrowse }) => {
   const { user } = useAuth();
+  const { navigate } = useRouter();
   const { addItem, openCartDrawer } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchOrders = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const data = await api.get<Order[]>('/orders');
@@ -31,6 +37,27 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onTrackOrder, onBrowse }
   useEffect(() => {
     fetchOrders();
   }, [user]);
+
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4 text-center animate-fade-in">
+        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl border border-emerald-100 flex items-center justify-center mx-auto mb-4 shadow-2xs">
+          <Package className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-extrabold text-slate-900 mb-1.5">Sign in to view orders</h2>
+        <p className="text-slate-500 mb-6 text-xs max-w-sm mx-auto leading-relaxed">
+          Log in with your mobile number to track live deliveries, review past orders, and download excise tax invoices.
+        </p>
+        <button
+          onClick={() => navigate('/login?redirect=/orders')}
+          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-extrabold shadow-sm transition-all text-sm flex items-center justify-center gap-2 mx-auto cursor-pointer"
+        >
+          <span>Sign In with Mobile OTP</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
 
   const handleReorder = (order: Order) => {
     order.items.forEach(item => {

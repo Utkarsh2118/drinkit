@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db/database.ts';
 import { DeliveryEstimationService } from '../services/deliveryEstimate.ts';
-import { authenticate, requireRole, AuthRequest } from '../middleware/auth.ts';
+import { authenticate, optionalAuth, requireRole, AuthRequest } from '../middleware/auth.ts';
 
 const router = Router();
 
@@ -65,10 +65,19 @@ router.get('/nearest', (req, res) => {
 });
 
 // GET single store with inventory breakdown
-router.get('/:id', (req, res) => {
+router.get('/:id', optionalAuth, (req: AuthRequest, res: Response) => {
   const store = db.getStores().find(s => s.id === req.params.id);
   if (!store) {
     return res.status(404).json({ success: false, message: 'Store not found' });
+  }
+
+  // Enforce staff store boundary: Staff can only access internal inventory for their assigned store
+  if (req.user && req.user.role === 'staff' && req.user.assignedStoreId && req.user.assignedStoreId !== store.id) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Store staff cannot view internal inventory for an unauthorized store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
   }
 
   const inventory = db.getInventory().filter(i => i.storeId === store.id);
@@ -101,6 +110,16 @@ router.post('/inventory/adjust', authenticate, requireRole(['staff', 'admin']), 
   const { storeId, productId, quantity } = req.body;
   if (!storeId || !productId || quantity === undefined) {
     return res.status(400).json({ success: false, message: 'storeId, productId, and quantity required' });
+  }
+
+  const user = req.user!;
+  // Strict Store Staff RBAC: Store staff can ONLY modify inventory for their assigned dark store!
+  if (user.role === 'staff' && user.assignedStoreId && user.assignedStoreId !== storeId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Store staff cannot adjust inventory for an unauthorized store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
   }
 
   db.updateStockLevel(storeId, productId, Number(quantity));

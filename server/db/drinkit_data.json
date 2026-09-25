@@ -4,7 +4,7 @@
       "id": "usr_admin",
       "name": "Aarav Sharma (Admin)",
       "email": "admin@drinkit.demo",
-      "passwordHash": "admin123",
+      "passwordHash": "$2b$10$w6pGNgi7.XYRoFkKMegjn.ttijGfRwMaJggqF9Oq5LgF6U/WSRORy",
       "role": "admin",
       "phone": "+91 98765 43210",
       "dateOfBirth": "1990-05-15",
@@ -13,13 +13,21 @@
       "ageVerifiedAt": "2026-01-01T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-01-01T00:00:00Z"
+      "createdAt": "2026-01-01T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      }
     },
     {
       "id": "usr_store",
       "name": "Rohan Verma (Store Lead)",
       "email": "store@drinkit.demo",
-      "passwordHash": "store123",
+      "passwordHash": "$2b$10$CykFiQlwBV0sJhsQqWiUgOWBk5y9NiPD2Y9ytygZ7kUaGzdG5eXZ2",
       "role": "staff",
       "phone": "+91 98765 43211",
       "dateOfBirth": "1994-08-20",
@@ -28,7 +36,16 @@
       "ageVerifiedAt": "2026-01-01T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-01-01T00:00:00Z"
+      "createdAt": "2026-01-01T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      },
+      "assignedStoreId": "store_indiranagar"
     },
     {
       "id": "usr_delivery",
@@ -43,11 +60,19 @@
       "ageVerifiedAt": "2026-01-01T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-01-01T00:00:00Z"
+      "createdAt": "2026-01-01T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      }
     },
     {
       "id": "usr_customer",
-      "name": "Pooja Nair (Customer)",
+      "name": "Pooja S. Nair",
       "email": "customer@drinkit.demo",
       "passwordHash": "customer123",
       "role": "customer",
@@ -88,7 +113,17 @@
           "isDefault": false
         }
       ],
-      "createdAt": "2026-02-01T00:00:00Z"
+      "createdAt": "2026-02-01T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "kn",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": false,
+        "deliverySms": true,
+        "emailAlerts": true
+      },
+      "updatedAt": "2026-09-25T18:52:01.339Z",
+      "avatarUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80"
     },
     {
       "id": "usr_rahul",
@@ -103,7 +138,15 @@
       "ageVerifiedAt": "2026-01-15T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-01-10T00:00:00Z"
+      "createdAt": "2026-01-10T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      }
     },
     {
       "id": "usr_sneha",
@@ -118,7 +161,15 @@
       "ageVerifiedAt": "2026-02-01T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-01-28T00:00:00Z"
+      "createdAt": "2026-01-28T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      }
     },
     {
       "id": "usr_ananya",
@@ -133,7 +184,15 @@
       "ageVerifiedAt": "2026-02-10T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-02-05T00:00:00Z"
+      "createdAt": "2026-02-05T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      }
     },
     {
       "id": "usr_dev",
@@ -148,7 +207,76 @@
       "ageVerifiedAt": "2026-02-20T00:00:00Z",
       "jurisdiction": "Karnataka",
       "addresses": [],
-      "createdAt": "2026-02-18T00:00:00Z"
+      "createdAt": "2026-02-18T00:00:00Z",
+      "isActive": true,
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      }
+    },
+    {
+      "id": "usr_1790361567207_jbrl",
+      "name": "Customer Bravo",
+      "email": "bravo_1790361567204@test.com",
+      "passwordHash": "$2b$10$0M8yTk/DBRZi7dOif2k8TOVpQJIwLmsWQFala7x7REEy3OoPpCnGu",
+      "role": "customer",
+      "phone": "9811279466",
+      "dateOfBirth": "1995-01-01",
+      "age": 31,
+      "isAgeVerified": true,
+      "ageVerifiedAt": "2026-09-25T18:39:27.303Z",
+      "jurisdiction": "Karnataka, India (State Excise Act Compliant)",
+      "addresses": [],
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      },
+      "isActive": true,
+      "createdAt": "2026-09-25T18:39:27.303Z"
+    },
+    {
+      "id": "usr_1790361579666_t79s",
+      "name": "Customer Bravo",
+      "email": "bravo_1790361579663@test.com",
+      "passwordHash": "$2b$10$xX6o8BU1wW2fOX0fgmqrseWI6kseK/PrPhVXzM2ETjKn9yNaxOJDq",
+      "role": "customer",
+      "phone": "9811588071",
+      "dateOfBirth": "1995-01-01",
+      "age": 31,
+      "isAgeVerified": true,
+      "ageVerifiedAt": "2026-09-25T18:39:39.763Z",
+      "jurisdiction": "Karnataka, India (State Excise Act Compliant)",
+      "addresses": [],
+      "preferredLanguage": "en",
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "promoAlerts": true,
+        "deliverySms": true,
+        "emailAlerts": true
+      },
+      "isActive": true,
+      "createdAt": "2026-09-25T18:39:39.763Z"
+    },
+    {
+      "id": "usr_1790362963539_lkrj",
+      "name": "Rohan Sharma",
+      "email": "rohan.sharma@example.com",
+      "passwordHash": "customer_otp_session",
+      "role": "customer",
+      "phone": "+91 98123 45678",
+      "dateOfBirth": "1998-05-15",
+      "age": 28,
+      "isAgeVerified": true,
+      "ageVerifiedAt": "2026-09-25T19:02:43.539Z",
+      "jurisdiction": "Karnataka",
+      "addresses": [],
+      "createdAt": "2026-09-25T19:02:43.539Z"
     }
   ],
   "categories": [
@@ -712,7 +840,7 @@
         "Subtle sweetness",
         "Clean finish"
       ],
-      "imageUrl": "https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=600&auto=format&fit=crop&q=80",
+      "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSONTwPDD_MHZXHehN53eEOZhHWywAwpsTDKd69_QYa1w&s=10",
       "country": "Mexico",
       "isBestseller": true,
       "isFeatured": true,
@@ -7207,6 +7335,237 @@
   },
   "auditLogs": [
     {
+      "id": "aud_1790362963539_omo7",
+      "timestamp": "2026-09-25T19:02:43.539Z",
+      "userId": "usr_1790362963539_lkrj",
+      "userName": "Rohan Sharma",
+      "role": "customer",
+      "action": "USER_REGISTERED",
+      "entity": "User",
+      "entityId": "usr_1790362963539_lkrj",
+      "details": "New user registered: rohan.sharma@example.com"
+    },
+    {
+      "id": "aud_1790362319420_c3qb",
+      "timestamp": "2026-09-25T18:51:59.420Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "AVATAR_UPDATED",
+      "entity": "User",
+      "entityId": "usr_customer",
+      "details": "Uploaded new profile avatar"
+    },
+    {
+      "id": "aud_1790361579791_bsav",
+      "timestamp": "2026-09-25T18:39:39.791Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "SUPPORT_TICKET_CREATED",
+      "entity": "SupportTicket",
+      "entityId": "tkt_1790361579791_uov0",
+      "details": "Created ticket TKT-40928: Where is my delivery?"
+    },
+    {
+      "id": "aud_1790361579763_o8wv",
+      "timestamp": "2026-09-25T18:39:39.763Z",
+      "userId": "usr_1790361579666_t79s",
+      "userName": "Customer Bravo",
+      "role": "customer",
+      "action": "USER_REGISTERED",
+      "entity": "User",
+      "entityId": "usr_1790361579666_t79s",
+      "details": "New user registered: bravo_1790361579663@test.com"
+    },
+    {
+      "id": "aud_1790361579661_9q3x",
+      "timestamp": "2026-09-25T18:39:39.661Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "AVATAR_UPDATED",
+      "entity": "User",
+      "entityId": "usr_customer",
+      "details": "Uploaded new profile avatar"
+    },
+    {
+      "id": "aud_1790361579648_5aq2",
+      "timestamp": "2026-09-25T18:39:39.648Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "PROFILE_UPDATED",
+      "entity": "User",
+      "entityId": "usr_customer",
+      "details": "Updated profile information"
+    },
+    {
+      "id": "aud_1790361579615_x6o3",
+      "timestamp": "2026-09-25T18:39:39.615Z",
+      "userId": "usr_delivery",
+      "userName": "Vikram Singh (Rider)",
+      "role": "delivery",
+      "action": "DELIVERY_LOGIN_SUCCESS",
+      "entity": "Auth",
+      "entityId": "usr_delivery",
+      "details": "Rider authenticated successfully"
+    },
+    {
+      "id": "aud_1790361579607_wia0",
+      "timestamp": "2026-09-25T18:39:39.607Z",
+      "userId": "usr_store",
+      "userName": "Rohan Verma (Store Lead)",
+      "role": "staff",
+      "action": "STORE_LOGIN_SUCCESS",
+      "entity": "Auth",
+      "entityId": "usr_store",
+      "details": "Store staff logged in successfully"
+    },
+    {
+      "id": "aud_1790361579504_32us",
+      "timestamp": "2026-09-25T18:39:39.504Z",
+      "userId": "usr_admin",
+      "userName": "Aarav Sharma (Admin)",
+      "role": "admin",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "entity": "Auth",
+      "entityId": "usr_admin",
+      "details": "Administrator logged in successfully"
+    },
+    {
+      "id": "aud_1790361579403_g5lb",
+      "timestamp": "2026-09-25T18:39:39.403Z",
+      "userId": "customer@drinkit.demo",
+      "userName": "customer@drinkit.demo",
+      "role": "unknown",
+      "action": "ADMIN_LOGIN_UNAUTHORIZED_ROLE",
+      "entity": "Auth",
+      "entityId": "customer@drinkit.demo",
+      "details": "Attempted admin portal access without admin role"
+    },
+    {
+      "id": "aud_1790361579398_wp5g",
+      "timestamp": "2026-09-25T18:39:39.398Z",
+      "userId": "usr_admin",
+      "userName": "Aarav Sharma (Admin)",
+      "role": "admin",
+      "action": "ADMIN_LOGIN_FAILED",
+      "entity": "Auth",
+      "entityId": "usr_admin",
+      "details": "Failed admin authentication attempt"
+    },
+    {
+      "id": "aud_1790361567360_z7g5",
+      "timestamp": "2026-09-25T18:39:27.360Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "USER_LOGOUT",
+      "entity": "Auth",
+      "entityId": "usr_customer",
+      "details": "User logged out and session token invalidated"
+    },
+    {
+      "id": "aud_1790361567337_1cgm",
+      "timestamp": "2026-09-25T18:39:27.337Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "SUPPORT_TICKET_CREATED",
+      "entity": "SupportTicket",
+      "entityId": "tkt_1790361567337_f4zf",
+      "details": "Created ticket TKT-64227: Where is my delivery?"
+    },
+    {
+      "id": "aud_1790361567304_mc6x",
+      "timestamp": "2026-09-25T18:39:27.304Z",
+      "userId": "usr_1790361567207_jbrl",
+      "userName": "Customer Bravo",
+      "role": "customer",
+      "action": "USER_REGISTERED",
+      "entity": "User",
+      "entityId": "usr_1790361567207_jbrl",
+      "details": "New user registered: bravo_1790361567204@test.com"
+    },
+    {
+      "id": "aud_1790361567202_042r",
+      "timestamp": "2026-09-25T18:39:27.202Z",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "role": "customer",
+      "action": "AVATAR_UPDATED",
+      "entity": "User",
+      "entityId": "usr_customer",
+      "details": "Uploaded new profile avatar"
+    },
+    {
+      "id": "aud_1790361567188_02wz",
+      "timestamp": "2026-09-25T18:39:27.188Z",
+      "userId": "usr_customer",
+      "userName": "Pooja Nair (Customer)",
+      "role": "customer",
+      "action": "PROFILE_UPDATED",
+      "entity": "User",
+      "entityId": "usr_customer",
+      "details": "Updated profile information"
+    },
+    {
+      "id": "aud_1790361567148_x8ue",
+      "timestamp": "2026-09-25T18:39:27.148Z",
+      "userId": "usr_delivery",
+      "userName": "Vikram Singh (Rider)",
+      "role": "delivery",
+      "action": "DELIVERY_LOGIN_SUCCESS",
+      "entity": "Auth",
+      "entityId": "usr_delivery",
+      "details": "Rider authenticated successfully"
+    },
+    {
+      "id": "aud_1790361567139_8kyf",
+      "timestamp": "2026-09-25T18:39:27.139Z",
+      "userId": "usr_store",
+      "userName": "Rohan Verma (Store Lead)",
+      "role": "staff",
+      "action": "STORE_LOGIN_SUCCESS",
+      "entity": "Auth",
+      "entityId": "usr_store",
+      "details": "Store staff logged in successfully"
+    },
+    {
+      "id": "aud_1790361567022_b95u",
+      "timestamp": "2026-09-25T18:39:27.022Z",
+      "userId": "usr_admin",
+      "userName": "Aarav Sharma (Admin)",
+      "role": "admin",
+      "action": "ADMIN_LOGIN_SUCCESS",
+      "entity": "Auth",
+      "entityId": "usr_admin",
+      "details": "Administrator logged in successfully"
+    },
+    {
+      "id": "aud_1790361566903_rz7u",
+      "timestamp": "2026-09-25T18:39:26.903Z",
+      "userId": "customer@drinkit.demo",
+      "userName": "customer@drinkit.demo",
+      "role": "unknown",
+      "action": "ADMIN_LOGIN_UNAUTHORIZED_ROLE",
+      "entity": "Auth",
+      "entityId": "customer@drinkit.demo",
+      "details": "Attempted admin portal access without admin role"
+    },
+    {
+      "id": "aud_1790361566898_6zbs",
+      "timestamp": "2026-09-25T18:39:26.898Z",
+      "userId": "usr_admin",
+      "userName": "Aarav Sharma (Admin)",
+      "role": "admin",
+      "action": "ADMIN_LOGIN_FAILED",
+      "entity": "Auth",
+      "entityId": "usr_admin",
+      "details": "Failed admin authentication attempt"
+    },
+    {
       "id": "aud_1789980512329_3nhq",
       "timestamp": "2026-09-21T08:48:32.329Z",
       "userId": "usr_admin",
@@ -7356,5 +7715,60 @@
   "invoiceSequence": 1002,
   "wishlists": {
     "usr_customer": []
-  }
+  },
+  "supportTickets": [
+    {
+      "id": "tkt_1790361579791_uov0",
+      "ticketNumber": "TKT-40928",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "userEmail": "customer@drinkit.demo",
+      "userPhone": "+91 98765 43213",
+      "category": "order",
+      "subject": "Where is my delivery?",
+      "status": "OPEN",
+      "priority": "MEDIUM",
+      "messages": [
+        {
+          "id": "msg_1790361579791_1",
+          "senderId": "usr_customer",
+          "senderName": "Pooja S. Nair",
+          "senderRole": "customer",
+          "message": "Placed an order 15 mins ago, just checking status.",
+          "timestamp": "2026-09-25T18:39:39.791Z"
+        }
+      ],
+      "createdAt": "2026-09-25T18:39:39.791Z",
+      "updatedAt": "2026-09-25T18:39:39.791Z"
+    },
+    {
+      "id": "tkt_1790361567337_f4zf",
+      "ticketNumber": "TKT-64227",
+      "userId": "usr_customer",
+      "userName": "Pooja S. Nair",
+      "userEmail": "customer@drinkit.demo",
+      "userPhone": "+91 98765 43213",
+      "category": "order",
+      "subject": "Where is my delivery?",
+      "status": "OPEN",
+      "priority": "MEDIUM",
+      "messages": [
+        {
+          "id": "msg_1790361567337_1",
+          "senderId": "usr_customer",
+          "senderName": "Pooja S. Nair",
+          "senderRole": "customer",
+          "message": "Placed an order 15 mins ago, just checking status.",
+          "timestamp": "2026-09-25T18:39:27.337Z"
+        }
+      ],
+      "createdAt": "2026-09-25T18:39:27.337Z",
+      "updatedAt": "2026-09-25T18:39:27.337Z"
+    }
+  ],
+  "revokedTokens": [
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl9jdXN0b21lciIsImVtYWlsIjoiY3VzdG9tZXJAZHJpbmtpdC5kZW1vIiwicm9sZSI6ImN1c3RvbWVyIiwiZXhwIjoxNzkwOTY2MzY2fQ.CQBMwhuKOEy8mG0TRk3aGzmGMdhcQqDkHW-5udHwsdU",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl9jdXN0b21lciIsImVtYWlsIjoiY3VzdG9tZXJAZHJpbmtpdC5kZW1vIiwicm9sZSI6ImN1c3RvbWVyIiwiZXhwIjoxNzkwOTY2Mzc5fQ.uODpvIVbO2HnfYLW6b0pGnVuv4ykvSardY1Lor6w5Tg",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzcl8xNzkwMzYyOTYzNTM5X2xrcmoiLCJlbWFpbCI6InJvaGFuLnNoYXJtYUBleGFtcGxlLmNvbSIsInJvbGUiOiJjdXN0b21lciIsImV4cCI6MTc5MDk2Nzc2M30.AM385fPKkiSIgO1kNwJfyve8FYcQ5nPRT-NWtDfsZhc"
+  ]
 }

@@ -47,12 +47,12 @@ router.post('/create-order', authenticate, async (req: AuthRequest, res: Respons
     }
 
     // 2. Excise & Dry-Day Check
-    const compliance = ComplianceService.checkOrderCompliance(items);
+    const compliance = ComplianceService.checkOrderCompliance(items, deliveryAddress?.postalCode);
     if (!compliance.permitted) {
       return res.status(403).json({
         success: false,
         message: compliance.reason,
-        errorCode: 'COMPLIANCE_RESTRICTION',
+        errorCode: compliance.errorCode || 'COMPLIANCE_RESTRICTION',
       });
     }
 
@@ -313,9 +313,9 @@ router.post('/verify-and-confirm', authenticate, async (req: AuthRequest, res: R
         fullName: user.name,
         phone: user.phone,
         addressLine1: 'Doorstep Delivery',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        postalCode: '560038',
+        city: 'Noida',
+        state: 'Uttar Pradesh',
+        postalCode: '201301',
       },
       items: orderItems,
       subtotal,

@@ -23,6 +23,7 @@ import {
   Loader2,
   Trash2,
   Smartphone,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useLocation } from '../context/LocationContext.tsx';
@@ -100,11 +101,9 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const {
     user,
-    switchDemoUser,
     logout,
+    isLoggingOut,
     isAgeVerified,
-    setIsCustomerAuthModalOpen,
-    setIsAdminAuthModalOpen,
   } = useAuth();
   const { selectedLocation, estimatedDeliveryRange, openLocationModal, isServiceable } = useLocation();
   const { totalItemCount, totalAmount, openCartDrawer } = useCart();
@@ -737,118 +736,158 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* Profile Menu Trigger & Dropdown */}
-            <div ref={profileContainerRef} className="relative">
+            {/* Profile Menu Trigger & Dropdown or Login Action */}
+            {!user ? (
               <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                title="User Profile & Operational Roles"
+                onClick={() => setActiveView('login')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-xs transition-transform active:scale-95 shrink-0"
+                title="Customer Sign In"
               >
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-xs shrink-0">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
-                </div>
-                <span className="hidden md:inline text-xs font-bold text-slate-800 truncate max-w-[90px]">
-                  {user?.name?.split(' ')[0] || 'Account'}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 hidden sm:inline" />
+                <User className="w-3.5 h-3.5" />
+                <span>Login</span>
               </button>
+            ) : (
+              <div ref={profileContainerRef} className="relative">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  title="User Profile & Settings"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center text-xs shrink-0 overflow-hidden">
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                    ) : user?.name ? (
+                      user.name.charAt(0).toUpperCase()
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                  </div>
+                  <span className="hidden md:inline text-xs font-bold text-slate-800 truncate max-w-[90px]">
+                    {user?.name?.split(' ')[0] || 'Customer'}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0 hidden sm:inline" />
+                </button>
 
-              {showProfileMenu && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-2.5 z-50 text-xs animate-scale-up">
-                  {/* User Profile Card */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-extrabold flex items-center justify-center text-sm">
-                        {user?.name ? user.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                {showProfileMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-2.5 z-50 text-xs animate-scale-up">
+                    {/* User Profile Card */}
+                    <div
+                      onClick={() => {
+                        setActiveView('profile');
+                        setShowProfileMenu(false);
+                      }}
+                      className="p-3 bg-slate-50 hover:bg-emerald-50/50 border border-slate-200 rounded-xl mb-2 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-extrabold flex items-center justify-center text-sm overflow-hidden shrink-0">
+                          {user?.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                          ) : user?.name ? (
+                            user.name.charAt(0).toUpperCase()
+                          ) : (
+                            <User className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-extrabold text-slate-900 text-xs truncate">{user?.name || 'Customer'}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{user?.phone || user?.email}</div>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-extrabold text-slate-900 text-xs truncate">{user?.name || 'Customer'}</div>
-                        <div className="text-[10px] text-slate-500 truncate">{user?.email || 'customer@drinkit.demo'}</div>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/80">
+                        <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                          Customer
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenAgeModal();
+                            setShowProfileMenu(false);
+                          }}
+                          className="text-[10px] font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1"
+                        >
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                          <span>{isAgeVerified ? '21+ Verified' : 'Verify Age'}</span>
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/80">
-                      <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
-                        {user?.role === 'staff' ? 'Store Hub Staff' : user?.role === 'delivery' ? 'Rider Agent' : user?.role === 'admin' ? 'Super Admin' : 'Customer'}
-                      </span>
+
+                    {/* Fast Navigation */}
+                    <div className="space-y-0.5 mb-2 pb-2 border-b border-slate-100">
                       <button
                         onClick={() => {
-                          onOpenAgeModal();
+                          setActiveView('profile');
                           setShowProfileMenu(false);
                         }}
-                        className="text-[10px] font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1"
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors ${
+                          activeView === 'profile' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
                       >
-                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                        <span>{isAgeVerified ? '21+ Verified' : 'Verify Age'}</span>
+                        <User className="w-4 h-4 text-emerald-600" />
+                        <span>My Profile & Settings</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveView('orders');
+                          setShowProfileMenu(false);
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors ${
+                          activeView === 'orders' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
+                      >
+                        <Package className="w-4 h-4 text-emerald-600" />
+                        <span>My Orders & Live Tracking</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveView('wishlist');
+                          setShowProfileMenu(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl transition-colors ${
+                          activeView === 'wishlist' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Heart className="w-4 h-4 text-rose-500" />
+                          <span>Saved Drinks Wishlist</span>
+                        </div>
+                        {wishlist.length > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                            {wishlist.length}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Customer Account & Logout */}
+                    <div className="pt-1 border-t border-slate-100">
+                      <button
+                        disabled={isLoggingOut}
+                        onClick={async () => {
+                          await logout();
+                          setShowProfileMenu(false);
+                          setActiveView('home');
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {isLoggingOut ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                            <span>Logging out...</span>
+                          </>
+                        ) : (
+                          <>
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Log Out</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
-
-                  {/* Customer Mobile + OTP Login Trigger */}
-                  <div className="mb-2 pb-2 border-b border-slate-100">
-                    <button
-                      onClick={() => {
-                        setIsCustomerAuthModalOpen(true);
-                        setShowProfileMenu(false);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold transition-colors text-xs"
-                    >
-                      <Smartphone className="w-4 h-4 text-emerald-600" />
-                      <span>Customer Sign In (Mobile + OTP)</span>
-                    </button>
-                  </div>
-
-                  {/* Fast Navigation */}
-                  <div className="space-y-0.5 mb-2 pb-2 border-b border-slate-100">
-                    <button
-                      onClick={() => {
-                        setActiveView('orders');
-                        setShowProfileMenu(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors ${
-                        activeView === 'orders' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'
-                      }`}
-                    >
-                      <Package className="w-4 h-4 text-emerald-600" />
-                      <span>My Orders & Live Tracking</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveView('wishlist');
-                        setShowProfileMenu(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl transition-colors ${
-                        activeView === 'wishlist' ? 'bg-emerald-50 text-emerald-800 font-bold' : 'hover:bg-slate-50 text-slate-700 font-medium'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Heart className="w-4 h-4 text-rose-500" />
-                        <span>Saved Drinks Wishlist</span>
-                      </div>
-                      {wishlist.length > 0 && (
-                        <span className="px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
-                          {wishlist.length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Customer Account & Logout */}
-                  <div className="pt-1 border-t border-slate-100">
-                    <button
-                      onClick={() => {
-                        logout();
-                        setShowProfileMenu(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold transition-colors"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Quick-Commerce Cart Button */}
             <button

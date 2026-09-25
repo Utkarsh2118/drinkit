@@ -1,17 +1,57 @@
 export type UserRole = 'customer' | 'staff' | 'delivery' | 'admin';
 
+export interface NotificationPreferences {
+  orderUpdates: boolean;
+  promoAlerts: boolean;
+  deliverySms: boolean;
+  emailAlerts: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   phone: string;
+  avatarUrl?: string;
+  preferredLanguage?: 'en' | 'kn' | 'hi';
+  notificationPreferences?: NotificationPreferences;
+  isActive?: boolean;
+  assignedStoreId?: string;
   dateOfBirth?: string;
   age?: number;
   isAgeVerified: boolean;
   ageVerifiedAt?: string;
   jurisdiction?: string;
   addresses: Address[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SupportTicketMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole | string;
+  message: string;
+  timestamp: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+  orderId?: string;
+  category: 'order' | 'delivery' | 'payment' | 'product' | 'account' | 'other';
+  subject: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  messages: SupportTicketMessage[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Address {
@@ -424,8 +464,15 @@ export interface PlatformComplianceSettings {
   dryDayActive: boolean;
   dryDayReason?: string;
   maxBottlesPerOrder: number;
+  maxVolumeLitresPerOrder?: number;
   operatingHoursOnly: boolean;
+  operatingHoursStart?: string;
+  operatingHoursEnd?: string;
   requireIdProofAtDoorstep: boolean;
+  verificationExpiryDays?: number;
+  restrictedPostalCodes?: string[];
+  exciseLicenseNumber?: string;
+  exciseLicenseValidUntil?: string;
 }
 
 export interface CartItem {

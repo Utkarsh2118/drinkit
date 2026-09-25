@@ -20,5 +20,23 @@ export default defineConfig(() => {
       // Allow requests through Render's / Vercel's proxy domains.
       allowedHosts: ['.onrender.com', '.vercel.app'],
     },
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('node_modules/motion')) {
+              return 'vendor-motion';
+            }
+          },
+        },
+      },
+    },
   };
 });
