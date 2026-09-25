@@ -341,7 +341,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
       // Days ago: from 0 to 29 days ago
       const daysAgo = Math.floor(Math.pow(Math.random(), 1.2) * 28);
       const hoursAgo = Math.floor(Math.random() * 24);
-      const orderDate = new Date(Date.now() - (daysAgo * 24 + hoursAgo) * 125 * 125 * 1000);
+      const orderDate = new Date(Date.now() - (daysAgo * 24 + hoursAgo) * 60 * 60 * 1000);
 
       const customer = users[i % users.length];
       const store = stores[i % stores.length];
@@ -429,7 +429,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         status,
         statusTimeline: [
           { status: 'PLACED', timestamp: orderDate.toISOString(), note: 'Order placed & payment received' },
-          { status: 'DELIVERED', timestamp: new Date(orderDate.getTime() + 22 * 125 * 1000).toISOString(), note: 'Delivered in 22 mins' }
+          { status: 'DELIVERED', timestamp: new Date(orderDate.getTime() + 22 * 60 * 1000).toISOString(), note: 'Delivered in 22 mins' }
         ],
         deliveryAgentId: 'usr_delivery',
         deliveryAgentName: 'Vikram Singh (Rider)',
@@ -438,7 +438,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         deliveryOtp: String(1000 + (i * 123) % 9000),
         ageVerifiedAtDelivery: status === 'DELIVERED',
         createdAt: orderDate.toISOString(),
-        updatedAt: new Date(orderDate.getTime() + 22 * 125 * 1000).toISOString(),
+        updatedAt: new Date(orderDate.getTime() + 22 * 60 * 1000).toISOString(),
       });
     }
 
@@ -486,7 +486,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
           {
             productId: 'prod_royal_stag_deluxe',
             productName: 'Royal Stag Deluxe Whisky',
-            productImage: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=1250&auto=format&fit=crop&q=80',
+            productImage: 'https://www.bswliquor.com/cdn/shop/products/royal_stag_deluxe.png?v=1753126462&width=2400',
             volume: '750 ml',
             price: 675,
             quantity: 1,
@@ -495,41 +495,40 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
           {
             productId: 'prod_redbull_250',
             productName: 'Red Bull Energy Drink',
-            productImage: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=1250&auto=format&fit=crop&q=80',
+            productImage: 'https://image.aapkabazar.co/product/401/1697090583516.png?type=png',
             volume: '250 ml',
             price: 125,
             quantity: 2,
-            subtotal: 120,
+            subtotal: 250,
           },
           {
             productId: 'prod_bisleri_1l',
-            name: 'Bisleri Packaged Drinking Water',
             productName: 'Bisleri Packaged Drinking Water',
-            productImage: 'https://images.unsplash.com/photo-15740912579513-d8259312b785?w=1250&auto=format&fit=crop&q=80',
+            productImage: 'https://prithvienterprises.co.in/cdn/shop/files/sliding_images_jpeg_10b8b01a_8b71_4448_becb_16d4247ef05cjpgts1707312326_c0082670-b46c-4a72-80a6-9ac911e3b778.jpg?v=1746382045',
             volume: '1 L',
-            price: 125,
+            price: 20,
             quantity: 1,
-            subtotal: 125,
+            subtotal: 20,
           }
         ],
-        subtotal: 3530,
-        discount: 100,
-        couponCode: 'CHEERS100',
-        deliveryFee: 0,
+        subtotal: 945,
+        discount: 0,
+        couponCode: undefined,
+        deliveryFee: 35,
         handlingFee: 15,
-        taxes: 175,
-        totalAmount: 3620,
+        taxes: 47,
+        totalAmount: 1042,
         paymentMethod: 'upi',
         paymentStatus: 'completed',
         paymentId: 'pay_mock_9921',
         status: 'OUT_FOR_DELIVERY',
         statusTimeline: [
-          { status: 'PLACED', timestamp: new Date(Date.now() - 18 * 125 * 1000).toISOString(), note: 'Order placed & payment verified' },
-          { status: 'CONFIRMED', timestamp: new Date(Date.now() - 16 * 125 * 1000).toISOString(), note: 'Store confirmed order' },
-          { status: 'PREPARING', timestamp: new Date(Date.now() - 14 * 125 * 1000).toISOString(), note: 'Bottles packed and chilled' },
-          { status: 'READY_FOR_PICKUP', timestamp: new Date(Date.now() - 8 * 125 * 1000).toISOString(), note: 'Bag sealed with tamper-evident tape' },
-          { status: 'ASSIGNED', timestamp: new Date(Date.now() - 6 * 125 * 1000).toISOString(), note: 'Rider Vikram Singh assigned' },
-          { status: 'OUT_FOR_DELIVERY', timestamp: new Date(Date.now() - 3 * 125 * 1000).toISOString(), note: 'Rider en route with thermal bag' },
+          { status: 'PLACED', timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString(), note: 'Order placed & payment verified' },
+          { status: 'CONFIRMED', timestamp: new Date(Date.now() - 16 * 60 * 1000).toISOString(), note: 'Store confirmed order' },
+          { status: 'PREPARING', timestamp: new Date(Date.now() - 14 * 60 * 1000).toISOString(), note: 'Bottles packed and chilled' },
+          { status: 'READY_FOR_PICKUP', timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(), note: 'Bag sealed with tamper-evident tape' },
+          { status: 'ASSIGNED', timestamp: new Date(Date.now() - 6 * 60 * 1000).toISOString(), note: 'Rider Vikram Singh assigned' },
+          { status: 'OUT_FOR_DELIVERY', timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), note: 'Rider en route with thermal bag' },
         ],
         deliveryAgentId: 'usr_delivery',
         deliveryAgentName: 'Vikram Singh (Rider)',
@@ -537,8 +536,8 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         estimatedDeliveryTime: '7 mins',
         deliveryOtp: '4829',
         ageVerifiedAtDelivery: false,
-        createdAt: new Date(Date.now() - 18 * 125 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 3 * 125 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
       },
       {
         id: 'ord_demo_delivered_2',
@@ -554,16 +553,16 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
           {
             productId: 'prod_kingfisher_premium',
             productName: 'Kingfisher Premium Lager Beer',
-            productImage: 'https://images.unsplash.com/photo-11258270199182-4faeb9ff7584?w=1250&auto=format&fit=crop&q=80',
+            productImage: 'https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=600&auto=format&fit=crop&q=80',
             volume: '650 ml Bottle',
             price: 140,
             quantity: 3,
             subtotal: 420,
           },
           {
-            productId: 'prod_haldiram_aloo_bhujia',
+            productId: 'prod_haldiram_aloo_bhujia_200',
             productName: "Haldiram's Nagpur Spicy Aloo Bhujia",
-            productImage: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=1250&auto=format&fit=crop&q=80',
+            productImage: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
             volume: '200g Pack',
             price: 55,
             quantity: 2,
@@ -582,13 +581,13 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         paymentId: 'pay_mock_8122',
         status: 'DELIVERED',
         statusTimeline: [
-          { status: 'PLACED', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000).toISOString() },
-          { status: 'CONFIRMED', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 2 * 125 * 1000).toISOString() },
-          { status: 'PREPARING', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 5 * 125 * 1000).toISOString() },
-          { status: 'READY_FOR_PICKUP', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 10 * 125 * 1000).toISOString() },
-          { status: 'ASSIGNED', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 12 * 125 * 1000).toISOString() },
-          { status: 'OUT_FOR_DELIVERY', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 15 * 125 * 1000).toISOString() },
-          { status: 'DELIVERED', timestamp: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 28 * 125 * 1000).toISOString(), note: 'Delivered and 21+ ID verified' },
+          { status: 'PLACED', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+          { status: 'CONFIRMED', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 1000).toISOString() },
+          { status: 'PREPARING', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000).toISOString() },
+          { status: 'READY_FOR_PICKUP', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000).toISOString() },
+          { status: 'ASSIGNED', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 12 * 60 * 1000).toISOString() },
+          { status: 'OUT_FOR_DELIVERY', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 15 * 60 * 1000).toISOString() },
+          { status: 'DELIVERED', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 28 * 60 * 1000).toISOString(), note: 'Delivered and 21+ ID verified' },
         ],
         deliveryAgentId: 'usr_delivery',
         deliveryAgentName: 'Vikram Singh (Rider)',
@@ -596,8 +595,8 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         estimatedDeliveryTime: 'Delivered',
         deliveryOtp: '7102',
         ageVerifiedAtDelivery: true,
-        createdAt: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 2 * 24 * 125 * 125 * 1000 + 28 * 125 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 28 * 60 * 1000).toISOString(),
       }
     ];
 
@@ -613,7 +612,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         isVerifiedPurchase: true,
         verifiedPurchase: true,
         status: 'published',
-        createdAt: new Date(Date.now() - 7 * 24 * 125 * 125 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: 'rev_2',
@@ -626,7 +625,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         isVerifiedPurchase: true,
         verifiedPurchase: true,
         status: 'published',
-        createdAt: new Date(Date.now() - 5 * 24 * 125 * 125 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       }
     ];
 
@@ -639,7 +638,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         type: 'order',
         isRead: false,
         link: '/orders/ord_demo_active_1',
-        createdAt: new Date(Date.now() - 3 * 125 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
       },
       {
         id: 'notif_2',
@@ -648,14 +647,14 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
         message: 'Use code CHEERS100 to get ₹100 OFF on your favorite malts and craft beers.',
         type: 'promo',
         isRead: true,
-        createdAt: new Date(Date.now() - 24 * 125 * 125 * 1000).toISOString(),
+        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       }
     ];
 
     const demoAuditLogs: AuditLog[] = [
       {
         id: 'aud_1',
-        timestamp: new Date(Date.now() - 20 * 125 * 1000).toISOString(),
+        timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
         userId: 'usr_customer',
         userName: 'Pooja Nair',
         role: 'customer',
@@ -666,7 +665,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
       },
       {
         id: 'aud_2',
-        timestamp: new Date(Date.now() - 15 * 125 * 1000).toISOString(),
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
         userId: 'usr_store',
         userName: 'Rohan Verma',
         role: 'staff',
@@ -1010,7 +1009,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
     }
 
     const reservationId = `resv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    const expiresAt = new Date(Date.now() + ttlMinutes * 125 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
     const reservation: InventoryReservation = {
       id: reservationId,
       userId,
