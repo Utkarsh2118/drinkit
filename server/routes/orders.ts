@@ -7,6 +7,7 @@ import { PaymentService } from '../services/paymentService.ts';
 import { CouponService } from '../services/couponService.ts';
 import { InvoiceService } from '../services/invoiceService.ts';
 import { socketService } from '../services/socketService.ts';
+import { OrderStatusService } from '../services/orderStatusService.ts';
 import { Order, OrderItem, OrderStatus, CancellationDetails, RefundDetails } from '../types.ts';
 
 const router = Router();
@@ -381,6 +382,90 @@ router.get('/:id', authenticate, (req: AuthRequest, res: Response) => {
   });
 });
 
+// GET complete real-time order tracking details (Coordinates, Status, Rider, ETA)
+router.get('/:id/tracking', authenticate, (req: AuthRequest, res: Response) => {
+  const order = db.findOrderById(req.params.id);
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  const user = req.user!;
+  // Strict Authorization
+  const isOwner = user.role === 'customer' && order.userId === user.id;
+  const isAssignedRider = user.role === 'delivery' && (order.deliveryAgentId === user.id || !order.deliveryAgentId);
+  const isStoreStaff = user.role === 'staff' && (!user.assignedStoreId || user.assignedStoreId === order.storeId);
+  const isAdmin = user.role === 'admin';
+
+  if (!isOwner && !isAssignedRider && !isStoreStaff && !isAdmin) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: You do not have permission to view telemetry for this order.',
+      errorCode: 'FORBIDDEN_RESOURCE_OWNERSHIP',
+    });
+  }
+
+  const store = db.getStores().find(s => s.id === order.storeId);
+  const trackingActive = ['ASSIGNED', 'DELIVERY_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'ARRIVING_SOON'].includes(order.status);
+
+  res.json({
+    success: true,
+    data: {
+      order,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      estimatedDeliveryTime: order.estimatedDeliveryTime,
+      trackingEnabled: trackingActive,
+      storeLocation: store
+        ? {
+            name: store.name,
+            address: store.address,
+            area: store.area,
+            latitude: store.latitude,
+            longitude: store.longitude,
+          }
+        : null,
+      customerLocation: {
+        addressLine: order.deliveryAddress?.addressLine1 || 'Customer Delivery Address',
+        label: order.deliveryAddress?.label || 'Home',
+        latitude: order.deliveryAddress?.latitude || 28.572,
+        longitude: order.deliveryAddress?.longitude || 77.325,
+      },
+      deliveryPartner: order.deliveryAgentId
+        ? {
+            id: order.deliveryAgentId,
+            name: order.deliveryAgentName || 'Vikram Singh',
+            phone: order.deliveryAgentPhone || '+91 98765 43212',
+            photo: order.deliveryPartnerPhoto || '/images/drinkit-logo.png',
+            rating: order.deliveryPartnerRating || 4.9,
+            vehicle: 'Electric Scooter (Eco Fleet)',
+          }
+        : null,
+      lastKnownLocation: trackingActive ? (order.lastKnownDeliveryLocation || null) : null,
+      statusTimeline: order.statusTimeline || [],
+      deliveryOtp: (isOwner || isAdmin) ? order.deliveryOtp : undefined,
+    },
+  });
+});
+
+// GET immutable order status timeline
+router.get('/:id/status-history', authenticate, (req: AuthRequest, res: Response) => {
+  const order = db.findOrderById(req.params.id);
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found' });
+  }
+
+  const user = req.user!;
+  if (user.role === 'customer' && order.userId !== user.id) {
+    return res.status(403).json({ success: false, message: 'Forbidden' });
+  }
+
+  res.json({
+    success: true,
+    data: order.statusTimeline || [],
+  });
+});
+
 // GET order invoice structured JSON data
 router.get('/:id/invoice', authenticate, (req: AuthRequest, res: Response) => {
   const order = db.findOrderById(req.params.id);
@@ -487,9 +572,9 @@ router.post('/:id/cancel', authenticate, async (req: AuthRequest, res: Response)
   });
 });
 
-// UPDATE ORDER STATUS (Store Staff packing / Delivery Agent status changes)
-router.post('/:id/status', authenticate, requireRole(['staff', 'delivery', 'admin']), (req: AuthRequest, res: Response) => {
-  const { status, note } = req.body;
+// UPDATE ORDER STATUS (Central Status Transition Engine)
+const handleStatusUpdate = (req: AuthRequest, res: Response) => {
+  const { status, note, failureReason, failureDetails } = req.body;
   if (!status) {
     return res.status(400).json({ success: false, message: 'Status is required' });
   }
@@ -501,62 +586,35 @@ router.post('/:id/status', authenticate, requireRole(['staff', 'delivery', 'admi
 
   const user = req.user!;
 
-  // Strict RBAC & Ownership validation:
-  if (user.role === 'delivery') {
-    // Delivery rider can ONLY update orders assigned to THEM
-    if (order.deliveryAgentId !== user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: Delivery partners can only update orders assigned to them.',
-        errorCode: 'FORBIDDEN_NOT_ASSIGNED_RIDER',
-      });
-    }
-    // Delivery rider can only transition to OUT_FOR_DELIVERY or trigger delivery completion
-    if (!['OUT_FOR_DELIVERY', 'DELIVERED'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Delivery partner can only set status to OUT_FOR_DELIVERY or DELIVERED.',
-        errorCode: 'INVALID_STATUS_TRANSITION',
-      });
-    }
-  } else if (user.role === 'staff') {
-    // Store staff can ONLY update orders for their assigned store
-    if (user.assignedStoreId && order.storeId !== user.assignedStoreId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: Store staff can only update orders belonging to their assigned store.',
-        errorCode: 'FORBIDDEN_STORE_MISMATCH',
-      });
-    }
-    // Store staff can only set preparation statuses
-    if (!['CONFIRMED', 'PREPARING', 'READY_FOR_PICKUP'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Store staff can only update order preparation statuses (CONFIRMED, PREPARING, READY_FOR_PICKUP).',
-        errorCode: 'INVALID_STATUS_TRANSITION',
-      });
-    }
-  }
-
-  const updated = db.updateOrderStatus(order.id, status as OrderStatus, note, {
-    id: user.id,
-    name: user.name,
-    role: user.role,
+  const result = OrderStatusService.transition(order.id, status as OrderStatus, {
+    note,
+    actor: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      assignedStoreId: user.assignedStoreId,
+    },
+    failureReason,
+    failureDetails,
   });
 
-  if (!updated) {
-    return res.status(500).json({ success: false, message: 'Failed to update order status' });
+  if (!result.success) {
+    return res.status(400).json({
+      success: false,
+      message: result.message,
+      errorCode: 'INVALID_STATUS_TRANSITION',
+    });
   }
-
-  // Real-time broadcast to customer and operations
-  socketService.emitOrderUpdate(updated, 'order:status_changed');
 
   res.json({
     success: true,
     message: `Order status updated to ${status}`,
-    data: updated,
+    data: result.order,
   });
-});
+};
+
+router.post('/:id/status', authenticate, requireRole(['staff', 'delivery', 'admin', 'customer']), handleStatusUpdate);
+router.patch('/:id/status', authenticate, requireRole(['staff', 'delivery', 'admin', 'customer']), handleStatusUpdate);
 
 // ASSIGN DELIVERY AGENT
 router.post('/:id/assign', authenticate, requireRole(['staff', 'admin', 'delivery']), (req: AuthRequest, res: Response) => {
@@ -648,20 +706,23 @@ router.post('/:id/verify-delivery', authenticate, requireRole(['delivery', 'admi
     });
   }
 
-  const updated = db.updateOrderStatus(order.id, 'DELIVERED', 'Delivered at doorstep; recipient 21+ government photo ID verified', {
-    id: user.id,
-    name: user.name,
-    role: user.role,
+  const result = OrderStatusService.transition(order.id, 'DELIVERED', {
+    note: 'Delivered at doorstep; recipient 21+ government photo ID verified and OTP PIN confirmed',
+    actor: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+    },
   });
 
-  if (updated) {
-    socketService.emitOrderUpdate(updated, 'order:delivered');
+  if (!result.success) {
+    return res.status(400).json({ success: false, message: result.message });
   }
 
   res.json({
     success: true,
     message: 'Delivery successfully verified and completed! Inventory reconciled.',
-    data: updated,
+    data: result.order,
   });
 });
 

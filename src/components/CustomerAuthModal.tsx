@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertCircle,
-  Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useRouter } from '../context/RouterContext.tsx';
@@ -288,18 +287,13 @@ export const CustomerAuthModal: React.FC = () => {
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col animate-scale-up">
         {/* Top Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white font-black flex items-center justify-center text-sm shadow-xs">
-              <Zap className="w-4 h-4 fill-white stroke-white" />
-            </div>
-            <div>
-              <div className="text-base font-black text-slate-900 leading-tight">
-                Drink<span className="text-emerald-600">It</span>
-              </div>
-              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                ⚡ 20-Min Delivery
-              </div>
-            </div>
+          <div className="flex items-center">
+            <img
+              src="/images/drinkit-logo.png"
+              alt="DrinkIt — Liquor Delivery App"
+              className="h-10 w-auto max-w-[150px] object-contain"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <button
             onClick={() => setIsCustomerAuthModalOpen(false)}

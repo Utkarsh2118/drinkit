@@ -90,6 +90,12 @@ const AppContent: React.FC = () => {
           setIsCheckoutModalOpen(true);
         }
       }
+    } else if (currentPath.startsWith('/orders/') && currentPath.endsWith('/track')) {
+      const parts = currentPath.split('/');
+      const id = parts[2];
+      if (id) {
+        setTrackingOrderId(id);
+      }
     }
   }, [currentPath, user, isAuthLoading]);
 
@@ -225,6 +231,7 @@ const AppContent: React.FC = () => {
           <CustomerHome
             onSelectProduct={prod => setSelectedProduct(prod)}
             onOpenAgeModal={() => setIsAgeModalOpen(true)}
+            onTrackOrder={orderId => setTrackingOrderId(orderId)}
             searchQuery={searchQuery}
             onClearSearch={() => setSearchQuery('')}
           />

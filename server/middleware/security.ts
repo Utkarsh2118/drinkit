@@ -39,7 +39,7 @@ export function securityHeadersMiddleware(req: Request, res: Response, next: Nex
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://maps.googleapis.com https://*.google.com https://*.gstatic.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.gstatic.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://images.unsplash.com https://maps.googleapis.com https://*.google.com https://*.gstatic.com https://*.openstreetmap.org",
+    "img-src 'self' data: blob: https: https://images.unsplash.com https://maps.googleapis.com https://*.google.com https://*.gstatic.com https://*.openstreetmap.org",
     "connect-src 'self' ws: wss: https: http://localhost:* https://*.googleapis.com https://api.razorpay.com https://nominatim.openstreetmap.org",
     "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
     "object-src 'none'",

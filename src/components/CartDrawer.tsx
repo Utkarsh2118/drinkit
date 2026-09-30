@@ -5,7 +5,8 @@ import { useLocation } from '../context/LocationContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useRouter } from '../context/RouterContext.tsx';
 import { api } from '../services/api.ts';
-import { PlatformComplianceSettings } from '../types.ts';
+import { PlatformComplianceSettings, Product } from '../types.ts';
+import { ProductImage } from './ProductImage.tsx';
 
 interface CartDrawerProps {
   onProceedToCheckout: () => void;
@@ -25,6 +26,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
     totalAmount,
     couponCode,
     appliedCoupon,
+    addItem,
     updateQuantity,
     removeItem,
     clearCart,
@@ -34,17 +36,31 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
     closeCartDrawer,
   } = useCart();
 
-  const { selectedLocation, estimatedDeliveryRange } = useLocation();
+  const { selectedLocation, estimatedDeliveryRange, activeStore } = useLocation();
   const [couponInput, setCouponInput] = useState('');
   const [isApplying, setIsApplying] = useState(false);
   const [couponStatusMsg, setCouponStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [compliance, setCompliance] = useState<PlatformComplianceSettings | null>(null);
+  const [smartRecommendations, setSmartRecommendations] = useState<Product[]>([]);
 
   useEffect(() => {
     if (isCartDrawerOpen) {
       api.get<PlatformComplianceSettings>('/compliance').then(setCompliance).catch(() => {});
+      if (items.length > 0) {
+        // Query smart pairings for the first product in the cart
+        const primaryProdId = items[0].product.id;
+        api
+          .get<Product[]>(`/products/pairings/${primaryProdId}?storeId=${activeStore?.id || 'store_noida_sec18'}`)
+          .then(data => {
+            if (Array.isArray(data)) {
+              const inCartIds = new Set(items.map(i => i.product.id));
+              setSmartRecommendations(data.filter(p => !inCartIds.has(p.id)));
+            }
+          })
+          .catch(() => {});
+      }
     }
-  }, [isCartDrawerOpen]);
+  }, [isCartDrawerOpen, items, activeStore]);
 
   if (!isCartDrawerOpen) return null;
 
@@ -184,6 +200,63 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                   </div>
                 </div>
               ))}
+
+              {/* Complete Your Party Companion Bar */}
+              {smartRecommendations.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-emerald-500/10 border border-amber-200/90 shadow-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 tracking-tight">
+                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500" />
+                      <span>Complete Your Party</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300">
+                      Party Staples
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 font-medium">
+                    Pairings for your order: ice, mixers, snacks & party disposables
+                  </p>
+
+                  <div className="flex gap-2.5 overflow-x-auto pb-1 pt-0.5 scrollbar-none snap-x">
+                    {smartRecommendations.map(p => (
+                      <div
+                        key={p.id}
+                        className="w-36 shrink-0 bg-white border border-slate-200/90 hover:border-amber-400 rounded-xl p-2.5 flex flex-col justify-between shadow-xs transition-all snap-start"
+                      >
+                        <div className="flex items-center justify-center h-20 w-full mb-1.5 bg-slate-50 rounded-lg p-1 overflow-hidden">
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name}
+                            className="max-h-full max-w-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                            {p.brandName}
+                          </div>
+                          <div className="text-xs font-bold text-slate-900 line-clamp-1 leading-snug" title={p.name}>
+                            {p.name}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                            {p.volume}
+                          </div>
+                        </div>
+                        <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-900">₹{p.price}</span>
+                          <button
+                            type="button"
+                            onClick={() => addItem(p)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-[11px] rounded-lg transition-all shadow-xs flex items-center gap-0.5"
+                          >
+                            <span>+ Add</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Coupon Section */}
               <div className="pt-2">

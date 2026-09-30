@@ -90,8 +90,15 @@ router.get('/:id', optionalAuth, (req: AuthRequest, res: Response) => {
       productName: prod?.name || 'Unknown',
       brandName: prod?.brandName || '',
       categoryName: prod?.categoryName || '',
-      price: prod?.price || 0,
+      price: inv.storePrice !== undefined ? inv.storePrice : (prod?.price || 0),
+      mrp: prod?.mrp || 0,
+      volume: prod?.volume || '',
+      sku: prod?.sku || `SKU-${inv.productId.slice(-6)}`,
       imageUrl: prod?.imageUrl || '',
+      imageVerified: prod?.imageVerified,
+      imageStatus: prod?.imageStatus,
+      isAvailable: inv.isAvailable !== false,
+      lowStockThreshold: inv.lowStockThreshold !== undefined ? inv.lowStockThreshold : 5,
       available: Math.max(0, inv.quantity - inv.reservedQuantity),
     };
   });
@@ -105,7 +112,133 @@ router.get('/:id', optionalAuth, (req: AuthRequest, res: Response) => {
   });
 });
 
-// Store staff / Admin inventory adjustment
+// Store staff / Admin adds existing global product to store inventory
+router.post('/:storeId/inventory', authenticate, requireRole(['staff', 'admin']), (req: AuthRequest, res: Response) => {
+  const { storeId } = req.params;
+  const { productId, quantity, lowStockThreshold, isAvailable, storePrice } = req.body;
+  const user = req.user!;
+
+  if (!productId || quantity === undefined) {
+    return res.status(400).json({ success: false, message: 'productId and quantity are required.' });
+  }
+
+  // Strict Store Staff RBAC
+  if (user.role === 'staff' && user.assignedStoreId && user.assignedStoreId !== storeId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Store staff cannot add inventory to an unauthorized store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
+  }
+
+  const product = db.findProductById(productId);
+  if (!product) {
+    return res.status(404).json({ success: false, message: 'Product not found in global catalogue.' });
+  }
+
+  const store = db.getStores().find(s => s.id === storeId);
+  if (!store) {
+    return res.status(404).json({ success: false, message: 'Store not found.' });
+  }
+
+  const inv = db.addProductToStoreInventory(storeId, productId, {
+    quantity: Number(quantity),
+    lowStockThreshold: lowStockThreshold !== undefined ? Number(lowStockThreshold) : 5,
+    isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : true,
+    storePrice: storePrice !== undefined ? Number(storePrice) : undefined,
+  });
+
+  db.logAudit(
+    user.id,
+    user.name,
+    user.role,
+    'STORE_PRODUCT_ADDED',
+    'StoreInventory',
+    `${storeId}_${productId}`,
+    `${user.name} added "${product.name}" with ${quantity} stock to store ${store.name}`
+  );
+
+  res.status(201).json({
+    success: true,
+    message: `Added "${product.name}" to ${store.name} inventory.`,
+    data: inv,
+  });
+});
+
+// Store staff / Admin updates store-specific inventory item (stock, low stock threshold, availability)
+router.patch('/:storeId/inventory/:productId', authenticate, requireRole(['staff', 'admin']), (req: AuthRequest, res: Response) => {
+  const { storeId, productId } = req.params;
+  const user = req.user!;
+
+  // Strict Store Staff RBAC
+  if (user.role === 'staff' && user.assignedStoreId && user.assignedStoreId !== storeId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Store staff cannot modify inventory for an unauthorized store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
+  }
+
+  const product = db.findProductById(productId);
+  const updated = db.updateStoreInventoryItem(storeId, productId, req.body);
+  if (!updated) {
+    return res.status(404).json({ success: false, message: 'Inventory record not found in this store.' });
+  }
+
+  db.logAudit(
+    user.id,
+    user.name,
+    user.role,
+    'STORE_INVENTORY_UPDATED',
+    'StoreInventory',
+    `${storeId}_${productId}`,
+    `${user.name} updated store inventory for "${product?.name || productId}"`
+  );
+
+  res.json({
+    success: true,
+    message: 'Store inventory updated successfully.',
+    data: updated,
+  });
+});
+
+// Store staff / Admin removes a product from store inventory
+router.delete('/:storeId/inventory/:productId', authenticate, requireRole(['staff', 'admin']), (req: AuthRequest, res: Response) => {
+  const { storeId, productId } = req.params;
+  const user = req.user!;
+
+  // Strict Store Staff RBAC
+  if (user.role === 'staff' && user.assignedStoreId && user.assignedStoreId !== storeId) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Store staff cannot remove inventory from an unauthorized store.',
+      errorCode: 'FORBIDDEN_STORE_MISMATCH',
+    });
+  }
+
+  const product = db.findProductById(productId);
+  const success = db.removeProductFromStoreInventory(storeId, productId);
+  if (!success) {
+    return res.status(404).json({ success: false, message: 'Product not catalogued in this store.' });
+  }
+
+  db.logAudit(
+    user.id,
+    user.name,
+    user.role,
+    'STORE_PRODUCT_REMOVED',
+    'StoreInventory',
+    `${storeId}_${productId}`,
+    `${user.name} removed "${product?.name || productId}" from store inventory`
+  );
+
+  res.json({
+    success: true,
+    message: 'Product removed from store inventory.',
+  });
+});
+
+// Legacy inventory adjustment route
 router.post('/inventory/adjust', authenticate, requireRole(['staff', 'admin']), (req: AuthRequest, res: Response) => {
   const { storeId, productId, quantity } = req.body;
   if (!storeId || !productId || quantity === undefined) {
@@ -113,7 +246,6 @@ router.post('/inventory/adjust', authenticate, requireRole(['staff', 'admin']), 
   }
 
   const user = req.user!;
-  // Strict Store Staff RBAC: Store staff can ONLY modify inventory for their assigned dark store!
   if (user.role === 'staff' && user.assignedStoreId && user.assignedStoreId !== storeId) {
     return res.status(403).json({
       success: false,

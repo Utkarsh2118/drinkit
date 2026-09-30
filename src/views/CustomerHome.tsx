@@ -14,17 +14,37 @@ import {
   Search,
   AlertTriangle,
   MapPin,
+  Check,
 } from 'lucide-react';
 import { Product, Category, Order } from '../types.ts';
 import { ProductCard } from '../components/ProductCard.tsx';
 import { ProductRail } from '../components/ProductRail.tsx';
+import { ActiveOrderBanner } from '../components/ActiveOrderBanner.tsx';
 import { useLocation } from '../context/LocationContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useCart } from '../context/CartContext.tsx';
 import { api } from '../services/api.ts';
+
+interface PartyBundle {
+  id: string;
+  name: string;
+  tagline: string;
+  badge: string;
+  items: {
+    categorySlot: string;
+    product: Product;
+    quantity: number;
+  }[];
+  totalPrice: number;
+  totalMrp: number;
+  savings: number;
+  isAvailable: boolean;
+}
 
 interface CustomerHomeProps {
   onSelectProduct: (product: Product) => void;
   onOpenAgeModal: () => void;
+  onTrackOrder?: (orderId: string) => void;
   searchQuery?: string;
   onClearSearch?: () => void;
 }
@@ -37,36 +57,40 @@ interface CategoryMeta {
 }
 
 const QUICK_COMMERCE_CATEGORIES: CategoryMeta[] = [
-  { id: 'all', name: 'Everything', shortName: 'All', imageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=200&auto=format&fit=crop&q=80' },
-  { id: 'cat_whisky', name: 'Whisky', shortName: 'Whisky', imageUrl: 'https://www.bswliquor.com/cdn/shop/products/royal_stag_deluxe.png?v=1753126462&width=800' },
-  { id: 'cat_beer', name: 'Beer', shortName: 'Beer', imageUrl: 'https://sipdirect-prod1.s3.ap-south-1.amazonaws.com/images/Category-Images2/Beer/Lager/Kingfisher-Premium-Lager-Beer-650mL_front.webp' },
-  { id: 'cat_vodka', name: 'Vodka', shortName: 'Vodka', imageUrl: 'https://chalosgrocery.com/assets/uploads/402ee7f71d732f2947e476500fbb2f36.png' },
-  { id: 'cat_rum', name: 'Rum', shortName: 'Rum', imageUrl: 'https://onlineliquornepal.com/wp-content/uploads/2021/01/Old-Monk-XXX-Rum.jpg' },
-  { id: 'cat_gin', name: 'Gin', shortName: 'Gin', imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=200&auto=format&fit=crop&q=80' },
-  { id: 'cat_wine', name: 'Wine', shortName: 'Wine', imageUrl: 'https://www.paulsliquor.com.au/cdn/shop/files/uNFtt2AyTOmKN5clpaSOBA_pb_600x600_7285965b-e94c-44f6-9ff6-d749725d1a19.png?v=1735615011' },
-  { id: 'cat_mixers', name: 'Soda & Mixers', shortName: 'Mixers', imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200&auto=format&fit=crop&q=80' },
-  { id: 'cat_water', name: 'Water', shortName: 'Water', imageUrl: 'https://prithvienterprises.co.in/cdn/shop/files/sliding_images_jpeg_10b8b01a_8b71_4448_becb_16d4247ef05cjpgts1707312326_c0082670-b46c-4a72-80a6-9ac911e3b778.jpg?v=1746382045' },
-  { id: 'cat_softdrinks', name: 'Soft Drinks', shortName: 'Soft Drinks', imageUrl: 'https://bazaar5.com/image/cache/catalog/pro/product/apiData/251023-coca-cola-soft-drink-750-ml-0-1000x1000.jpg' },
-  { id: 'cat_energy', name: 'Energy Drinks', shortName: 'Energy', imageUrl: 'https://image.aapkabazar.co/product/401/1697090583516.png?type=png' },
-  { id: 'cat_juices', name: 'Juices', shortName: 'Juices', imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&auto=format&fit=crop&q=80' },
-  { id: 'cat_snacks', name: 'Chips & Namkeen', shortName: 'Snacks', imageUrl: 'https://www.pankaj-boutique.com/31477-large_default/namkeen-indian-aloo-bhujia.jpg' },
-  { id: 'cat_party_glasses', name: 'Disposable Glasses', shortName: 'Glasses', imageUrl: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&auto=format&fit=crop&q=80' },
-  { id: 'cat_party_plates', name: 'Disposable Plates', shortName: 'Plates', imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&auto=format&fit=crop&q=80' },
-  { id: 'cat_party_napkins', name: 'Napkins', shortName: 'Napkins', imageUrl: 'https://www.jiomart.com/images/product/original/491963192/home-one-paper-napkin-29-x-29-cm-100-pcs-product-images-o491963192-p590441807-0-202203170913.jpg?im=Resize%3D%281000%2C1000%29' },
-  { id: 'cat_party', name: 'Party Essentials', shortName: 'Party', imageUrl: 'https://images.unsplash.com/photo-1574096079513-d8259312b785?w=200&auto=format&fit=crop&q=80' },
+  { id: 'all', name: 'Everything', shortName: 'All', imageUrl: '/images/categories/all.webp' },
+  { id: 'cat_whisky', name: 'Whisky', shortName: 'Whisky', imageUrl: '/images/categories/whisky.webp' },
+  { id: 'cat_beer', name: 'Beer', shortName: 'Beer', imageUrl: '/images/categories/beer.webp' },
+  { id: 'cat_vodka', name: 'Vodka', shortName: 'Vodka', imageUrl: '/images/categories/vodka.webp' },
+  { id: 'cat_rum', name: 'Rum', shortName: 'Rum', imageUrl: '/images/categories/rum.webp' },
+  { id: 'cat_gin', name: 'Gin', shortName: 'Gin', imageUrl: '/images/categories/gin.webp' },
+  { id: 'cat_wine', name: 'Wine', shortName: 'Wine', imageUrl: '/images/categories/wine.webp' },
+  { id: 'cat_mixers', name: 'Soda & Mixers', shortName: 'Mixers', imageUrl: '/images/categories/mixers.webp' },
+  { id: 'cat_water', name: 'Water', shortName: 'Water', imageUrl: '/images/categories/water.webp' },
+  { id: 'cat_softdrinks', name: 'Soft Drinks', shortName: 'Soft Drinks', imageUrl: '/images/categories/softdrinks.webp' },
+  { id: 'cat_energy', name: 'Energy Drinks', shortName: 'Energy', imageUrl: '/images/categories/energy.webp' },
+  { id: 'cat_juices', name: 'Juices', shortName: 'Juices', imageUrl: '/images/categories/juices.webp' },
+  { id: 'cat_snacks', name: 'Chips & Namkeen', shortName: 'Snacks', imageUrl: '/images/categories/snacks.webp' },
+  { id: 'cat_party_glasses', name: 'Disposable Glasses', shortName: 'Glasses', imageUrl: '/images/categories/party_glasses.webp' },
+  { id: 'cat_party_plates', name: 'Disposable Plates', shortName: 'Plates', imageUrl: '/images/categories/party_plates.webp' },
+  { id: 'cat_party_napkins', name: 'Napkins', shortName: 'Napkins', imageUrl: '/images/categories/party_napkins.webp' },
+  { id: 'cat_party', name: 'Party Essentials', shortName: 'Party', imageUrl: '/images/categories/party.webp' },
 ];
 
 export const CustomerHome: React.FC<CustomerHomeProps> = ({
   onSelectProduct,
   onOpenAgeModal,
+  onTrackOrder,
   searchQuery,
   onClearSearch,
 }) => {
   const { activeStore, estimatedDeliveryRange, selectedLocation, isServiceable, openLocationModal } = useLocation();
   const { user } = useAuth();
+  const { addMultipleItems, openCartDrawer } = useCart();
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [partyBundles, setPartyBundles] = useState<PartyBundle[]>([]);
+  const [recentlyAddedBundleId, setRecentlyAddedBundleId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [specialFilter, setSpecialFilter] = useState<'none' | 'bestseller' | 'deals'>('none');
@@ -108,13 +132,27 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
     });
   };
 
-  // Load categories
+  // Load categories and party bundles
   useEffect(() => {
     api
       .get<Category[]>(`/products/categories?storeId=${activeStore?.id || 'store_noida_sec18'}`)
       .then(cats => setCategories(cats))
       .catch(() => {});
+
+    api
+      .get<PartyBundle[]>(`/products/bundles?storeId=${activeStore?.id || 'store_noida_sec18'}`)
+      .then(res => setPartyBundles(res || []))
+      .catch(() => {});
   }, [activeStore]);
+
+  const handleAddBundleToCart = (bundle: PartyBundle) => {
+    addMultipleItems(bundle.items.map(i => ({ product: i.product, quantity: i.quantity })));
+    setRecentlyAddedBundleId(bundle.id);
+    setTimeout(() => {
+      setRecentlyAddedBundleId(null);
+    }, 2500);
+    openCartDrawer();
+  };
 
   // Fetch products
   useEffect(() => {
@@ -271,6 +309,9 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-16 animate-fade-in">
+      {/* Active Order Banner (Live Quick-Commerce Tracking) */}
+      {onTrackOrder && <ActiveOrderBanner onTrackOrder={onTrackOrder} />}
+
       {/* ========================================================= */}
       {/* 0. OUTSIDE DELIVERY ZONE BANNER (IF UNSERVICEABLE)       */}
       {/* ========================================================= */}
@@ -378,9 +419,9 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
             <div className="relative shrink-0 flex items-center justify-center pl-2 sm:pr-4">
               <div className="w-24 h-24 xs:w-28 xs:h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden bg-emerald-950/40 p-1 border border-emerald-700/40 shadow-inner">
                 <img
-                  src="https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=400&auto=format&fit=crop&q=80"
+                  src="/images/products/beer/corona-extra-330ml.webp"
                   alt="Chilled Beers"
-                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain rounded-xl group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
             </div>
@@ -408,11 +449,11 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
-              <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-amber-700/40 ml-2">
+              <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-amber-700/40 ml-2 bg-amber-950/60 p-1">
                 <img
-                  src="https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=200&auto=format&fit=crop&q=80"
+                  src="/images/products/whisky/royal-stag-deluxe.webp"
                   alt="Whiskies"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
             </div>
@@ -437,11 +478,11 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
-              <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-800 ml-2">
+              <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-slate-800 ml-2 bg-slate-900/60 p-1">
                 <img
-                  src="https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200&auto=format&fit=crop&q=80"
+                  src="/images/products/drinks/thums-up-750ml.webp"
                   alt="Tonics & Mixers"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
             </div>
@@ -690,9 +731,139 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
         </div>
       ) : (
         /* ========================================================= */
-        /* 5. HOMEPAGE PRODUCTS DOMINATE: 8 CONCISE PRODUCT RAILS   */
+        /* 5. PARTY BUNDLES & CONCISE PRODUCT RAILS                  */
         /* ========================================================= */
         <div className="space-y-7 sm:space-y-9">
+          {/* Party Bundles & Packs Showcase */}
+          {partyBundles.length > 0 && (
+            <section className="rounded-3xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-emerald-500/10 border border-amber-200/90 p-4 sm:p-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase">
+                      Party Commerce
+                    </span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-amber-800">
+                      <Sparkles className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
+                      1-Click Complete Packs
+                    </span>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 mt-1 tracking-tight">
+                    Party Bundles & Packs
+                  </h2>
+                  <p className="text-xs text-slate-600 font-medium">
+                    Pre-curated party essentials dynamically bundled from {activeStore?.name || 'your local store'} inventory
+                  </p>
+                </div>
+                <div className="text-[11px] text-slate-600 font-bold bg-white/80 border border-amber-200/80 px-3 py-1.5 rounded-xl self-start sm:self-auto">
+                  ⚡ Guaranteed delivery in {estimatedDeliveryRange}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {partyBundles.map(bundle => {
+                  const isAdded = recentlyAddedBundleId === bundle.id;
+
+                  return (
+                    <div
+                      key={bundle.id}
+                      className="bg-white rounded-2xl border border-slate-200/90 hover:border-amber-400 p-4 flex flex-col justify-between shadow-xs hover:shadow-md transition-all group"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-black tracking-wide uppercase border border-amber-200">
+                            {bundle.badge}
+                          </span>
+                          {bundle.savings > 0 && (
+                            <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                              Save ₹{bundle.savings}
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="font-black text-slate-900 text-base mt-2 group-hover:text-amber-900 transition-colors">
+                          {bundle.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5 line-clamp-1">
+                          {bundle.tagline}
+                        </p>
+
+                        {/* Items included preview */}
+                        <div className="mt-3 space-y-1.5 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                            Pack Includes:
+                          </div>
+                          <div className="space-y-1">
+                            {bundle.items.map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-1.5 truncate max-w-[70%]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                  <span className="text-slate-800 font-semibold truncate text-[11px]">
+                                    {item.product.name}
+                                  </span>
+                                </div>
+                                <span className="text-slate-500 text-[11px] font-bold">
+                                  {item.quantity}x • ₹{item.product.price * item.quantity}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-lg font-black text-slate-900">₹{bundle.totalPrice}</span>
+                            {bundle.totalMrp > bundle.totalPrice && (
+                              <span className="text-xs text-slate-400 line-through">₹{bundle.totalMrp}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-semibold block">
+                            {bundle.items.reduce((s, i) => s + i.quantity, 0)} items in pack
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddBundleToCart(bundle)}
+                          disabled={!bundle.isAvailable}
+                          className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all shadow-xs flex items-center gap-1.5 ${
+                            isAdded
+                              ? 'bg-emerald-700 text-white'
+                              : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Added to Cart!</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="w-3.5 h-3.5" />
+                              <span>Add Pack to Cart</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* RAIL 0: Chilled Beers */}
+          <ProductRail
+            id="rail-beer"
+            title="Chilled Beers"
+            subtitle="Ice-cold lagers, craft wheat beers & strong pints • 20-30 min delivery"
+            badge="SUPER CHILLED"
+            products={chilledBeers}
+            onSelectProduct={onSelectProduct}
+            onSeeAll={() => handleSelectCategory('cat_beer')}
+          />
           {/* RAIL 1: Deals Near You */}
           <ProductRail id="rail-deals" title="Deals Near You" subtitle="Products and prices available at your selected store" products={dealsNearYou} onSelectProduct={onSelectProduct} onSeeAll={() => handleSelectFilter('deals')} />
 
@@ -759,9 +930,17 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* 6. RESPONSIBLE CONSUMPTION NOTICE (SUBTLE AT BOTTOM)      */}
+      {/* 6. FOOTER & RESPONSIBLE CONSUMPTION NOTICE                */}
       {/* ========================================================= */}
-      <div className="pt-6 pb-2 text-center border-t border-slate-200/80">
+      <footer className="pt-8 pb-4 text-center border-t border-slate-200/80">
+        <div className="flex flex-col items-center justify-center mb-3">
+          <img
+            src="/images/drinkit-logo.png"
+            alt="DrinkIt — Liquor Delivery App"
+            className="w-28 sm:w-36 h-auto object-contain drop-shadow-xs"
+            referrerPolicy="no-referrer"
+          />
+        </div>
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-600 font-bold mb-1">
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>Licensed Micro-Warehouse Partner • UP & Delhi State Excise Compliant</span>
@@ -769,7 +948,7 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
         <p className="text-[11px] text-slate-400 max-w-xl mx-auto leading-relaxed">
           Alcohol sale & delivery restricted strictly to individuals 21 years of age and above. Physical government photo ID verification mandatory upon doorstep delivery. Drink responsibly. Never drink and drive.
         </p>
-      </div>
+      </footer>
     </div>
   );
 };

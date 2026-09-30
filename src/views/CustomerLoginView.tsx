@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertCircle,
-  Zap,
   CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -307,15 +306,15 @@ export const CustomerLoginView: React.FC = () => {
 
       {/* Centered Modern Light-Theme Authentication Card */}
       <div className="w-full max-w-[420px] bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm">
-        {/* Subtle Brand Header */}
+        {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black text-sm shadow-xs">
-              <Zap className="w-4 h-4 fill-white stroke-white" />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-slate-900">
-              Drink<span className="text-emerald-600">It</span>
-            </span>
+          <div className="flex items-center justify-center mb-3">
+            <img
+              src="/images/drinkit-logo.png"
+              alt="DrinkIt — Liquor Delivery App"
+              className="h-16 w-auto max-w-[200px] object-contain"
+              referrerPolicy="no-referrer"
+            />
           </div>
 
           <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mt-1">

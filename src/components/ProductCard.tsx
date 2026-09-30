@@ -3,6 +3,7 @@ import { Plus, Minus, Star, Heart, Zap } from 'lucide-react';
 import { Product } from '../types.ts';
 import { useCart } from '../context/CartContext.tsx';
 import { useWishlist } from '../context/WishlistContext.tsx';
+import { ProductImage } from './ProductImage.tsx';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +16,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
   const quantity = getItemQuantity(product.id);
   const isWishlisted = isInWishlist(product.id);
+  const isOutOfStock = product.inStock === false || product.stock === 0 || product.status === 'OUT_OF_STOCK';
   const discountPercent =
     product.mrp > product.price ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
 
@@ -25,12 +27,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         className="relative w-full aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2 flex items-center justify-center p-2.5 sm:p-3 cursor-pointer border border-slate-100"
         onClick={() => onSelect(product)}
       >
-        <img
+        <ProductImage
           src={product.imageUrl}
           alt={product.name}
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-          loading="lazy"
-          decoding="async"
+          categoryName={product.categoryName}
+          isAlcoholic={product.isAlcoholic}
+          imageVerified={product.imageVerified}
+          imageStatus={product.imageStatus}
         />
 
         {/* Wishlist Button - 44px hit boundary with comfortable touch */}
@@ -111,7 +115,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
           {/* Compact 'ADD' Button / Quantity Control Stepper */}
           <div className="shrink-0">
-            {quantity === 0 ? (
+            {isOutOfStock ? (
+              <span className="h-8 sm:h-8.5 px-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-wider flex items-center justify-center cursor-not-allowed select-none">
+                Out of Stock
+              </span>
+            ) : quantity === 0 ? (
               <button
                 type="button"
                 onClick={() => addItem(product)}

@@ -13,7 +13,6 @@ import {
   Building2,
   Lock,
   LogOut,
-  Zap,
   X,
   TrendingUp,
   Package,
@@ -585,12 +584,13 @@ export const Header: React.FC<HeaderProps> = ({
                 setQuery('');
               }}
               className="flex items-center group text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-xl shrink-0"
-              title="DrinkIt - 20 Min Drink Delivery"
+              title="DrinkIt — Liquor Delivery App"
             >
               <img
-                src="/images/drinkit-logo.webp"
-                alt="DrinkIt - Liquor Delivery"
-                className="w-20 h-14 sm:w-24 sm:h-16 object-contain object-center drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200"
+                src="/images/drinkit-logo.png"
+                alt="DrinkIt — Liquor Delivery App"
+                className="w-[110px] sm:w-[145px] md:w-[160px] h-auto max-h-14 sm:max-h-16 object-contain object-left drop-shadow-xs group-hover:scale-[1.02] transition-transform duration-200"
+                referrerPolicy="no-referrer"
               />
             </button>
 

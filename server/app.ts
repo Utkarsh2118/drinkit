@@ -17,12 +17,14 @@ import paymentsRouter from './routes/payments.ts';
 import wishlistRouter from './routes/wishlist.ts';
 import addressesRouter from './routes/addresses.ts';
 import complianceRouter from './routes/compliance.ts';
+import productRequestsRouter from './routes/productRequests.ts';
+import deliveryRouter from './routes/delivery.ts';
 
 export function createExpressApp() {
   const app = express();
 
   // 1. Performance Compression (gzip/deflate for JSON & REST responses)
-  app.use(compression());
+  app.use(compression() as any);
 
   // 2. Security Headers (nosniff, frameguard, CSP, referrer-policy)
   app.use(securityHeadersMiddleware);
@@ -95,6 +97,8 @@ export function createExpressApp() {
   app.use('/api/wishlist', wishlistRouter);
   app.use('/api/addresses', addressesRouter);
   app.use('/api/compliance', complianceRouter);
+  app.use('/api/product-requests', productRequestsRouter);
+  app.use('/api/delivery', deliveryRouter);
 
   // 5. Global Error Handling Middleware (Hides internal stack traces in production)
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

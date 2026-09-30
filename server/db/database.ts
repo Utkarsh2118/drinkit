@@ -25,6 +25,9 @@ import {
   WishlistItem,
   SupportTicket,
   SupportTicketMessage,
+  ProductRequest,
+  ProductStatus,
+  ProductImageStatus,
 } from '../types.ts';
 import {
   SEED_CATEGORIES,
@@ -55,6 +58,7 @@ export interface DatabaseSchema {
   auditLogs: AuditLog[];
   invoiceSequence: number;
   supportTickets?: SupportTicket[];
+  productRequests?: ProductRequest[];
   revokedTokens?: string[];
   catalogueVersion?: number;
 }
@@ -83,6 +87,9 @@ class DatabaseManager {
         console.error('Error sweeping expired reservations in background:', err);
       }
     }, 30000);
+    if (this.sweepIntervalTimer && typeof this.sweepIntervalTimer.unref === 'function') {
+      this.sweepIntervalTimer.unref();
+    }
   }
 
   public rebuildIndexes(): void {
@@ -117,31 +124,33 @@ class DatabaseManager {
           parsed.invoiceSequence = parsed.invoiceSequence || 1000;
           parsed.wishlists = parsed.wishlists || {};
           parsed.supportTickets = parsed.supportTickets || [];
+          parsed.productRequests = parsed.productRequests || [];
           parsed.revokedTokens = parsed.revokedTokens || [];
           parsed.catalogueVersion = parsed.catalogueVersion || 0;
 
-          // Migrate stores, zones, compliance, and products to UP + Delhi NCR if previous data had old regions
+          // Migrate stores, zones, compliance, and products to UP + Delhi NCR if previous data had old regions or earlier catalogue versions
           const hasOldStores = (parsed.stores || []).some((s: any) => s.id === 'store_indiranagar' || s.city === 'Bengaluru' || s.state === 'Karnataka');
-          const needsCatalogueV3 = parsed.catalogueVersion < 4 || hasOldStores || !parsed.stores || parsed.stores.length === 0;
-          if (needsCatalogueV3) {
+          const needsCatalogueV5 = (parsed.catalogueVersion || 0) < 5 || hasOldStores || !parsed.stores || parsed.stores.length < 17 || !parsed.products || parsed.products.length < 150;
+          if (needsCatalogueV5) {
             parsed.stores = SEED_STORES;
             parsed.deliveryZones = SEED_DELIVERY_ZONES;
             parsed.complianceSettings = SEED_COMPLIANCE_SETTINGS;
             parsed.categories = SEED_CATEGORIES;
             parsed.brands = SEED_BRANDS;
             parsed.products = SEED_PRODUCTS;
-            parsed.catalogueVersion = 4;
+            parsed.catalogueVersion = 5;
             // Re-generate store inventory with deliberate store-specific catalogue differences.
             parsed.inventory = [];
             for (const store of SEED_STORES) {
+              const storeIndex = SEED_STORES.findIndex(s => s.id === store.id);
               for (const product of SEED_PRODUCTS) {
                 const stateAllowed = !product.availableStates?.length || product.availableStates.includes(store.state);
                 const productIndex = SEED_PRODUCTS.findIndex(p => p.id === product.id);
-                const storeIndex = SEED_STORES.findIndex(s => s.id === store.id);
-                const selectiveAvailability = ((productIndex + storeIndex) % 5) !== 4;
+                // Selective availability: allow 90% of eligible products per store with distinct regional stock
+                const selectiveAvailability = ((productIndex * 3 + storeIndex * 7) % 10) !== 9;
                 if (!stateAllowed || !selectiveAvailability || !product.isActive) continue;
-                const baseStock = product.isBestseller ? 24 : 12;
-                const stockOffset = ((storeIndex + productIndex) % 4) * 4;
+                const baseStock = product.isBestseller ? 28 : 14;
+                const stockOffset = ((storeIndex + productIndex) % 5) * 3;
                 parsed.inventory.push({
                   id: `inv_${store.id}_${product.id}`,
                   storeId: store.id,
@@ -237,7 +246,7 @@ class DatabaseManager {
           }
 
           // Keep the regional catalogue version authoritative after migration.
-          parsed.catalogueVersion = 4;
+          parsed.catalogueVersion = 5;
 
           // Ensure stores list has all configured stores
           const existingStoreIds = new Set((parsed.stores || []).map((s: any) => s.id));
@@ -553,7 +562,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
           {
             productId: 'prod_kingfisher_premium',
             productName: 'Kingfisher Premium Lager Beer',
-            productImage: 'https://images.unsplash.com/photo-1608270199182-4faeb9ff7584?w=600&auto=format&fit=crop&q=80',
+            productImage: '/images/products/beer/kingfisher-premium.webp',
             volume: '650 ml Bottle',
             price: 140,
             quantity: 3,
@@ -562,7 +571,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
           {
             productId: 'prod_haldiram_aloo_bhujia_200',
             productName: "Haldiram's Nagpur Spicy Aloo Bhujia",
-            productImage: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
+            productImage: '/images/products/snacks/haldirams-aloo-bhujia-150g.webp',
             volume: '200g Pack',
             price: 55,
             quantity: 2,
@@ -692,6 +701,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
       auditLogs: demoAuditLogs,
       reservations: [],
       invoiceSequence: 1047,
+      catalogueVersion: 5,
     };
 
     this.save(initialData);
@@ -700,6 +710,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
 
   private save(data: DatabaseSchema) {
     try {
+      this.data = data;
       const dir = path.dirname(this.storageFilePath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -716,6 +727,7 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
   }
 
   // --- GETTERS ---
+  public getData(): DatabaseSchema { return this.data; }
   public getUsers(): User[] { return this.data.users; }
   public getCategories(): Category[] { return this.data.categories; }
   public getBrands(): Brand[] { return this.data.brands; }
@@ -856,20 +868,41 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
     return this.productMap.get(id) || this.data.products.find(p => p.id === id);
   }
 
-  public createProduct(product: Product): Product {
-    this.data.products.unshift(product);
-    // Initialize inventory across all active stores for this new product
-    for (const store of this.data.stores) {
-      this.data.inventory.push({
-        id: `inv_${store.id}_${product.id}`,
-        storeId: store.id,
-        productId: product.id,
-        quantity: 25,
-        reservedQuantity: 0,
-        lowStockThreshold: 5,
-        updatedAt: new Date().toISOString(),
-      });
+  public hasProductDependencies(productId: string): boolean {
+    return (this.data.orders || []).some(o => (o.items || []).some(item => item.productId === productId));
+  }
+
+  public createProduct(
+    product: Product,
+    initialInventory?: { storeId: string; stock: number; lowStockThreshold?: number }[]
+  ): Product {
+    if (!product.createdAt) product.createdAt = new Date().toISOString();
+    product.updatedAt = product.createdAt;
+    if (!product.status) {
+      product.status = product.isActive ? 'ACTIVE' : 'INACTIVE';
     }
+    this.data.products.unshift(product);
+    this.productMap.set(product.id, product);
+
+    if (initialInventory && initialInventory.length > 0) {
+      for (const item of initialInventory) {
+        this.addProductToStoreInventory(item.storeId, product.id, {
+          quantity: item.stock,
+          lowStockThreshold: item.lowStockThreshold || 5,
+          isAvailable: true,
+        });
+      }
+    } else {
+      // Default initial stock of 15 across stores
+      for (const store of this.data.stores) {
+        this.addProductToStoreInventory(store.id, product.id, {
+          quantity: 15,
+          lowStockThreshold: 5,
+          isAvailable: true,
+        });
+      }
+    }
+
     this.persist();
     return product;
   }
@@ -877,17 +910,164 @@ parsed.products = (parsed.products || []).map((existingProduct: Product) => {
   public updateProduct(id: string, updates: Partial<Product>): Product | null {
     const idx = this.data.products.findIndex(p => p.id === id);
     if (idx === -1) return null;
-    this.data.products[idx] = { ...this.data.products[idx], ...updates };
+    this.data.products[idx] = {
+      ...this.data.products[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.productMap.set(id, this.data.products[idx]);
     this.persist();
     return this.data.products[idx];
   }
 
-  public deleteProduct(id: string): boolean {
-    const prevLen = this.data.products.length;
+  public archiveProduct(id: string): Product | null {
+    const p = this.findProductById(id);
+    if (!p) return null;
+    p.isArchived = true;
+    p.status = 'ARCHIVED';
+    p.isActive = false;
+    p.updatedAt = new Date().toISOString();
+    this.persist();
+    return p;
+  }
+
+  public deleteProduct(id: string): { success: boolean; archived: boolean; message: string } {
+    const product = this.findProductById(id);
+    if (!product) {
+      return { success: false, archived: false, message: 'Product not found' };
+    }
+
+    if (this.hasProductDependencies(id)) {
+      this.archiveProduct(id);
+      return {
+        success: true,
+        archived: true,
+        message: 'Product has order transaction history. Safely archived to preserve records.',
+      };
+    }
+
     this.data.products = this.data.products.filter(p => p.id !== id);
     this.data.inventory = this.data.inventory.filter(i => i.productId !== id);
+    this.productMap.delete(id);
     this.persist();
-    return this.data.products.length < prevLen;
+    return { success: true, archived: false, message: 'Product permanently deleted.' };
+  }
+
+  public getProductInventoryAcrossStores(productId: string): { store: Store; inventory: StoreInventoryItem | null }[] {
+    return this.data.stores.map(store => {
+      const inv = this.data.inventory.find(i => i.storeId === store.id && i.productId === productId) || null;
+      return { store, inventory: inv };
+    });
+  }
+
+  public updateProductInventoryAcrossStores(
+    productId: string,
+    updates: { storeId: string; quantity: number; lowStockThreshold?: number; isAvailable?: boolean }[]
+  ): void {
+    for (const u of updates) {
+      const existing = this.data.inventory.find(i => i.storeId === u.storeId && i.productId === productId);
+      if (existing) {
+        existing.quantity = Math.max(0, u.quantity);
+        if (u.lowStockThreshold !== undefined) existing.lowStockThreshold = u.lowStockThreshold;
+        if (u.isAvailable !== undefined) existing.isAvailable = u.isAvailable;
+        existing.availableQuantity = Math.max(0, existing.quantity - existing.reservedQuantity);
+        existing.updatedAt = new Date().toISOString();
+      } else {
+        this.addProductToStoreInventory(u.storeId, productId, {
+          quantity: u.quantity,
+          lowStockThreshold: u.lowStockThreshold || 5,
+          isAvailable: u.isAvailable !== undefined ? u.isAvailable : true,
+        });
+      }
+    }
+    this.persist();
+  }
+
+  public addProductToStoreInventory(
+    storeId: string,
+    productId: string,
+    data: { quantity: number; lowStockThreshold?: number; isAvailable?: boolean; storePrice?: number }
+  ): StoreInventoryItem {
+    let inv = this.data.inventory.find(i => i.storeId === storeId && i.productId === productId);
+    const now = new Date().toISOString();
+    if (inv) {
+      inv.quantity = Math.max(0, data.quantity);
+      if (data.lowStockThreshold !== undefined) inv.lowStockThreshold = data.lowStockThreshold;
+      if (data.isAvailable !== undefined) inv.isAvailable = data.isAvailable;
+      if (data.storePrice !== undefined) inv.storePrice = data.storePrice;
+      inv.availableQuantity = Math.max(0, inv.quantity - inv.reservedQuantity);
+      inv.updatedAt = now;
+    } else {
+      inv = {
+        id: `inv_${storeId}_${productId}`,
+        storeId,
+        productId,
+        quantity: Math.max(0, data.quantity),
+        reservedQuantity: 0,
+        availableQuantity: Math.max(0, data.quantity),
+        lowStockThreshold: data.lowStockThreshold || 5,
+        isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
+        storePrice: data.storePrice,
+        updatedAt: now,
+      };
+      this.data.inventory.push(inv);
+      this.inventoryKeyMap.set(`${storeId}:${productId}:`, inv);
+    }
+    this.persist();
+    return inv;
+  }
+
+  public updateStoreInventoryItem(
+    storeId: string,
+    productId: string,
+    data: Partial<StoreInventoryItem>
+  ): StoreInventoryItem | null {
+    const inv = this.data.inventory.find(i => i.storeId === storeId && i.productId === productId);
+    if (!inv) return null;
+    if (data.quantity !== undefined) {
+      inv.quantity = Math.max(0, data.quantity);
+      inv.availableQuantity = Math.max(0, inv.quantity - inv.reservedQuantity);
+    }
+    if (data.lowStockThreshold !== undefined) inv.lowStockThreshold = data.lowStockThreshold;
+    if (data.isAvailable !== undefined) inv.isAvailable = data.isAvailable;
+    if (data.storePrice !== undefined) inv.storePrice = data.storePrice;
+    if (data.deliveryEnabled !== undefined) inv.deliveryEnabled = data.deliveryEnabled;
+    inv.updatedAt = new Date().toISOString();
+    this.persist();
+    return inv;
+  }
+
+  public removeProductFromStoreInventory(storeId: string, productId: string): boolean {
+    const prevLen = this.data.inventory.length;
+    this.data.inventory = this.data.inventory.filter(i => !(i.storeId === storeId && i.productId === productId));
+    this.inventoryKeyMap.delete(`${storeId}:${productId}:`);
+    this.persist();
+    return this.data.inventory.length < prevLen;
+  }
+
+  // --- PRODUCT REQUEST METHODS ---
+  public getProductRequests(): ProductRequest[] {
+    return this.data.productRequests || [];
+  }
+
+  public createProductRequest(req: ProductRequest): ProductRequest {
+    this.data.productRequests = this.data.productRequests || [];
+    this.data.productRequests.unshift(req);
+    this.persist();
+    return req;
+  }
+
+  public updateProductRequest(id: string, updates: Partial<ProductRequest>): ProductRequest | null {
+    this.data.productRequests = this.data.productRequests || [];
+    const idx = this.data.productRequests.findIndex(r => r.id === id);
+    if (idx === -1) return null;
+    this.data.productRequests[idx] = {
+      ...this.data.productRequests[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.persist();
+    return this.data.productRequests[idx];
   }
 
   // --- INVENTORY & RESERVATION METHODS ---

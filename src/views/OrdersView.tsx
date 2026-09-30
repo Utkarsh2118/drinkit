@@ -147,7 +147,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onTrackOrder, onBrowse }
             >
               {/* Card Header */}
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="font-mono font-black text-slate-900 text-sm">{order.orderNumber}</span>
                   <span
                     className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md border ${getStatusBadge(
@@ -156,8 +156,20 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onTrackOrder, onBrowse }
                   >
                     {order.status.replace(/_/g, ' ')}
                   </span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    • {order.storeName}
+                  </span>
                 </div>
-                <div className="text-sm font-black text-slate-900">₹{order.totalAmount}</div>
+                <div className="text-right">
+                  <div className="text-sm font-black text-slate-900">₹{order.totalAmount}</div>
+                  <div className="text-[10px] text-emerald-700 font-bold">
+                    {order.status === 'DELIVERED'
+                      ? 'Delivered'
+                      : order.status === 'CANCELLED'
+                      ? 'Cancelled'
+                      : `ETA: ${order.estimatedDeliveryTime || '20–25 min'}`}
+                  </div>
+                </div>
               </div>
 
               {/* Items List */}
@@ -189,17 +201,28 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onTrackOrder, onBrowse }
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleReorder(order)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
                   >
                     Reorder
                   </button>
-                  <button
-                    onClick={() => onTrackOrder(order.id)}
-                    className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition-colors shadow-xs"
-                  >
-                    <span>Track Order</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  {['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status) ? (
+                    <button
+                      onClick={() => onTrackOrder(order.id)}
+                      className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold transition-colors cursor-pointer"
+                    >
+                      <span>View Order</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onTrackOrder(order.id)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition-colors shadow-xs cursor-pointer animate-pulse"
+                    >
+                      <Zap className="w-3 h-3 fill-white" />
+                      <span>Track Order</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

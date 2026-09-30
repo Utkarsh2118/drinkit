@@ -51,8 +51,13 @@ export const StoreLoginView: React.FC = () => {
       {/* Store Login Card */}
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-xl">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mb-4 shadow-xs">
-            <Building2 className="w-7 h-7" />
+          <div className="flex justify-center mb-4">
+            <img
+              src="/images/drinkit-logo.png"
+              alt="DrinkIt — Liquor Delivery App"
+              className="h-16 w-auto max-w-[190px] object-contain drop-shadow-xs"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <div className="inline-block px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black uppercase tracking-widest mb-2">
             Store Operations Hub

@@ -525,7 +525,7 @@ router.post('/products', (req: AuthRequest, res: Response) => {
     isAlcoholic: isAlcoholic !== undefined ? Boolean(isAlcoholic) : true,
     description: description || 'Premium beverage selection.',
     tastingNotes: Array.isArray(tastingNotes) ? tastingNotes : ['Smooth finish'],
-    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600&auto=format&fit=crop&q=80',
+    imageUrl: imageUrl || '/images/products/whisky/royal-stag-deluxe.webp',
     country: country || 'India',
     isBestseller: Boolean(isBestseller),
     isFeatured: Boolean(isFeatured),

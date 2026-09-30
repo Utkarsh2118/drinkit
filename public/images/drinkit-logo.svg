@@ -1,0 +1,365 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Gradients for Amber Liquid -->
+    <linearGradient id="amberGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE082" />
+      <stop offset="30%" stop-color="#FFB300" />
+      <stop offset="70%" stop-color="#FF8F00" />
+      <stop offset="100%" stop-color="#C43E00" />
+    </linearGradient>
+
+    <linearGradient id="liquidGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8E1" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#FFA000" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#D84315" stop-opacity="0.95" />
+    </linearGradient>
+
+    <linearGradient id="deepAmber" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FFB74D" />
+      <stop offset="50%" stop-color="#E65100" />
+      <stop offset="100%" stop-color="#8D2B00" />
+    </linearGradient>
+
+    <linearGradient id="sunburstGrad" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#FF3D00" />
+      <stop offset="40%" stop-color="#FF9100" />
+      <stop offset="80%" stop-color="#FFD54F" />
+      <stop offset="100%" stop-color="#FFF9C4" />
+    </linearGradient>
+
+    <linearGradient id="roadGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1A1008" />
+      <stop offset="60%" stop-color="#3E2723" />
+      <stop offset="100%" stop-color="#FF9E80" />
+    </linearGradient>
+
+    <linearGradient id="bottleGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="25%" stop-color="#FFE082" stop-opacity="0.2" />
+      <stop offset="75%" stop-color="#C43E00" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#4E1400" stop-opacity="0.9" />
+    </linearGradient>
+
+    <linearGradient id="metallicBlack" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#374151" />
+      <stop offset="40%" stop-color="#1F2937" />
+      <stop offset="70%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+
+    <linearGradient id="goldBevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3B0" />
+      <stop offset="35%" stop-color="#E5A625" />
+      <stop offset="70%" stop-color="#996000" />
+      <stop offset="100%" stop-color="#E5A625" />
+    </linearGradient>
+
+    <linearGradient id="orangeTGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD54F" />
+      <stop offset="40%" stop-color="#FF9100" />
+      <stop offset="100%" stop-color="#D84315" />
+    </linearGradient>
+
+    <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- ========================================== -->
+  <!-- 1. BACKDROP SPEED LINES / SPLASH RIBBONS   -->
+  <!-- ========================================== -->
+  <g id="speed-ribbons" opacity="0.95">
+    <rect x="100" y="320" width="220" height="24" rx="12" fill="url(#deepAmber)" />
+    <rect x="195" y="370" width="130" height="22" rx="11" fill="url(#deepAmber)" />
+    <rect x="140" y="420" width="190" height="22" rx="11" fill="url(#deepAmber)" />
+    <rect x="180" y="468" width="140" height="20" rx="10" fill="url(#deepAmber)" />
+    <rect x="88" y="515" width="230" height="20" rx="10" fill="url(#deepAmber)" />
+    <circle cx="212" cy="442" r="10" fill="#FFB300" />
+    <circle cx="160" cy="340" r="7" fill="#FF8F00" />
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 2. CENTRAL VIGNETTE: DELHI / INDIA GATE    -->
+  <!-- ========================================== -->
+  <g id="central-vignette" clip-path="url(#vignette-clip)">
+    <clipPath id="vignette-clip">
+      <path d="M 280 620 L 280 430 C 280 270, 480 210, 620 280 C 740 340, 770 480, 740 620 Z" />
+    </clipPath>
+
+    <!-- Sky & Sunburst -->
+    <rect x="250" y="200" width="540" height="440" fill="url(#sunburstGrad)" />
+    
+    <!-- Glowing Setting Sun -->
+    <circle cx="475" cy="450" r="120" fill="#FFFDE7" opacity="0.9" filter="url(#glowFilter)" />
+
+    <!-- Distant Cityscape & Monuments -->
+    <g fill="#4A1C08" opacity="0.9">
+      <!-- Minarets / domes left -->
+      <rect x="340" y="415" width="10" height="75" rx="3" />
+      <path d="M 338 415 Q 345 395 352 415 Z" />
+      <path d="M 365 440 Q 380 410 395 440 Z" />
+      <rect x="370" y="440" width="20" height="50" />
+
+      <!-- Minarets / domes right -->
+      <rect x="560" y="415" width="10" height="75" rx="3" />
+      <path d="M 558 415 Q 565 395 572 415 Z" />
+      <path d="M 525 440 Q 540 410 555 440 Z" />
+      <rect x="530" y="440" width="20" height="50" />
+
+      <!-- Birds in the sky -->
+      <path d="M 395 352 Q 402 346 409 352 Q 416 346 423 352 Q 416 350 409 354 Q 402 350 395 352 Z" fill="#2E1205" />
+      <path d="M 540 375 Q 545 370 550 375 Q 555 370 560 375 Q 555 373 550 377 Q 545 373 540 375 Z" fill="#2E1205" />
+    </g>
+
+    <!-- INDIA GATE Monument Centerpiece -->
+    <g fill="#2D0F04" id="india-gate">
+      <!-- Base pillars and foundation -->
+      <rect x="424" y="395" width="96" height="95" />
+      <!-- Arch cut-out -->
+      <path d="M 452 490 L 452 445 Q 472 432 492 445 L 492 490 Z" fill="url(#sunburstGrad)" />
+      <!-- Sun rays through arch -->
+      <circle cx="472" cy="460" r="14" fill="#FFFFFF" opacity="0.95" />
+      <!-- Upper cornice and terrace -->
+      <rect x="416" y="385" width="112" height="12" rx="2" />
+      <rect x="430" y="375" width="84" height="11" rx="1" />
+      <rect x="444" y="365" width="56" height="11" rx="1" />
+      <rect x="456" y="358" width="32" height="8" rx="1" />
+    </g>
+
+    <!-- S-Curved Highway to India Gate -->
+    <path d="M 280 640 Q 420 620 465 520 L 479 520 Q 450 630 650 640 Z" fill="url(#roadGrad)" />
+    <!-- Golden Light Trails on Highway -->
+    <path d="M 320 636 Q 440 600 472 520" stroke="#FFE082" stroke-width="4" fill="none" opacity="0.9" />
+    <path d="M 335 640 Q 450 605 476 520" stroke="#FFB300" stroke-width="3" fill="none" opacity="0.8" />
+    <path d="M 350 644 Q 460 610 478 520" stroke="#FF6F00" stroke-width="2.5" fill="none" opacity="0.85" />
+    <path d="M 470 520 Q 480 590 620 635" stroke="#FFE082" stroke-width="3.5" fill="none" opacity="0.8" />
+
+    <!-- Street Lanterns on Curb -->
+    <g fill="#FFE57F">
+      <circle cx="345" cy="545" r="4" filter="url(#glowFilter)" />
+      <line x1="345" y1="545" x2="345" y2="570" stroke="#3E2723" stroke-width="2.5" />
+      <circle cx="368" cy="535" r="3.5" filter="url(#glowFilter)" />
+      <line x1="368" y1="535" x2="368" y2="555" stroke="#3E2723" stroke-width="2" />
+      <circle cx="390" cy="525" r="3" filter="url(#glowFilter)" />
+      <line x1="390" y1="525" x2="390" y2="542" stroke="#3E2723" stroke-width="1.8" />
+      <circle cx="560" cy="535" r="3.5" filter="url(#glowFilter)" />
+      <line x1="560" y1="535" x2="560" y2="555" stroke="#3E2723" stroke-width="2" />
+      <circle cx="585" cy="545" r="4" filter="url(#glowFilter)" />
+      <line x1="585" y1="545" x2="585" y2="570" stroke="#3E2723" stroke-width="2.5" />
+    </g>
+
+    <!-- Prominent Red Location Pin on Highway -->
+    <g id="location-pin" transform="translate(495, 510)">
+      <path d="M 0 0 C -14 -14 -22 -28 -22 -44 C -22 -62 -10 -74 0 -74 C 10 -74 22 -62 22 -44 C 22 -28 14 -14 0 0 Z" fill="#E53935" filter="url(#softShadow)" />
+      <circle cx="0" cy="-44" r="8" fill="#FFFFFF" />
+    </g>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 3. LIQUID SPLASH SWOOSH & SURGE (LETTER D) -->
+  <!-- ========================================== -->
+  <g id="amber-liquid-wave">
+    <!-- Main Sweeping Spiral Wave Outer Rim -->
+    <path d="M 285 275 C 420 220 620 135 770 245 C 880 325 905 460 840 600 C 785 715 630 745 440 730 C 270 715 200 660 195 640 C 250 670 410 705 570 690 C 720 675 820 600 840 480 C 855 385 810 290 710 225 C 610 160 440 215 315 285 Z" fill="url(#deepAmber)" />
+
+    <!-- Inner Golden Liquid Core with Highlights -->
+    <path d="M 315 285 C 450 225 615 170 735 245 C 830 305 860 415 825 530 C 790 645 680 685 530 675 C 380 665 240 620 220 580 C 280 630 460 655 600 635 C 730 615 790 540 805 450 C 820 370 775 285 685 235 C 595 185 440 235 340 300 Z" fill="url(#amberGold)" opacity="0.95" />
+
+    <!-- Specular White Glints along Fluid Waves -->
+    <path d="M 440 220 C 560 170 680 200 745 250" stroke="#FFF9C4" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.8" />
+    <path d="M 780 280 C 840 340 855 420 835 500" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.75" />
+    <path d="M 300 610 C 440 670 620 680 730 640" stroke="#FFE082" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.8" />
+
+    <!-- Flowing Jet Pouring into Tumbler -->
+    <path d="M 590 240 Q 640 320 660 480 Q 680 540 705 580 Q 675 560 650 490 Q 625 350 560 270 Z" fill="url(#liquidGlow)" />
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 4. TOP-LEFT POURING WHISKEY BOTTLE         -->
+  <!-- ========================================== -->
+  <g id="pouring-bottle" transform="translate(365, 175) rotate(-33)" filter="url(#softShadow)">
+    <!-- Liquid stream escaping spout -->
+    <path d="M 205 15 C 235 25 270 50 310 110 C 285 100 245 75 205 45 Z" fill="url(#liquidGlow)" />
+
+    <!-- Spout & Screw Neck Finish -->
+    <rect x="180" y="8" width="28" height="44" rx="5" fill="#1C1917" stroke="#D4AF37" stroke-width="2.5" />
+    <rect x="195" y="10" width="10" height="40" rx="3" fill="#D4AF37" />
+    <!-- Neck Collar Bands -->
+    <rect x="160" y="14" width="22" height="32" rx="4" fill="#0C0A09" stroke="#E5A625" stroke-width="2" />
+    <rect x="166" y="14" width="8" height="32" fill="#E5A625" />
+
+    <!-- Bottle Neck -->
+    <path d="M 160 15 L 105 5 C 95 3 85 0 70 -5 L 70 65 C 85 60 95 57 105 55 L 160 45 Z" fill="url(#deepAmber)" stroke="#E5A625" stroke-width="2" />
+
+    <!-- Bottle Main Body (750ml Fluted Heavy Glass) -->
+    <rect x="-190" y="-30" width="260" height="120" rx="18" fill="url(#deepAmber)" stroke="#F59E0B" stroke-width="3" />
+    <!-- Glass Highlights / Reflections -->
+    <rect x="-185" y="-24" width="250" height="18" rx="8" fill="#FFFFFF" opacity="0.45" />
+    <rect x="-180" y="65" width="240" height="12" rx="6" fill="#FFFFFF" opacity="0.25" />
+
+    <!-- Elegant Black & Gold Brand Label -->
+    <rect x="-135" y="-18" width="150" height="96" rx="8" fill="#111827" stroke="#FBBF24" stroke-width="3.5" />
+    <rect x="-130" y="-13" width="140" height="86" rx="6" fill="#030712" stroke="#D97706" stroke-width="1.5" />
+
+    <!-- Gold 5-Point Crown Motif on Label -->
+    <g id="bottle-crown" transform="translate(-60, 30) scale(1.1)">
+      <path d="M -26 0 L -22 -20 L -9 -6 L 0 -26 L 9 -6 L 22 -20 L 26 0 Z" fill="url(#goldBevel)" stroke="#FFF9C4" stroke-width="1" />
+      <rect x="-26" y="2" width="52" height="6" rx="2" fill="url(#goldBevel)" />
+      <!-- Jewels on Crown -->
+      <circle cx="-22" cy="-21" r="2.5" fill="#FFFFFF" />
+      <circle cx="0" cy="-27" r="3" fill="#FFFFFF" />
+      <circle cx="22" cy="-21" r="2.5" fill="#FFFFFF" />
+      <circle cx="-13" cy="5" r="1.5" fill="#E53935" />
+      <circle cx="0" cy="5" r="1.8" fill="#E53935" />
+      <circle cx="13" cy="5" r="1.5" fill="#E53935" />
+    </g>
+
+    <!-- Thick Glass Punts at Bottom -->
+    <rect x="-192" y="-28" width="16" height="116" rx="6" fill="#292524" opacity="0.6" />
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 5. RIGHT WHISKEY ROCKS TUMBLER WITH ICE   -->
+  <!-- ========================================== -->
+  <g id="whiskey-tumbler" transform="translate(710, 580)">
+    <!-- Tumbler Glass Body -->
+    <path d="M -90 -80 L -70 85 C -68 100 -50 105 0 105 C 50 105 68 100 70 85 L 90 -80 Z" fill="#FFFFFF" fill-opacity="0.15" stroke="#FFFFFF" stroke-width="4.5" filter="url(#softShadow)" />
+    
+    <!-- Thick Glass Base -->
+    <path d="M -66 65 L -62 88 C -60 98 -45 102 0 102 C 45 102 60 98 62 88 L 66 65 Z" fill="#FFFFFF" fill-opacity="0.3" stroke="#B0BEC5" stroke-width="2" />
+
+    <!-- Amber Liquor Inside Tumbler -->
+    <path d="M -82 -30 C -50 -20 50 -20 82 -30 L 66 65 C 45 70 -45 70 -66 65 Z" fill="url(#deepAmber)" opacity="0.9" />
+
+    <!-- Clear Faceted Ice Cubes Floating in Whiskey -->
+    <!-- Ice Cube 1 (Left) -->
+    <polygon points="-45,-40 -15,-60 25,-45 -5,-25" fill="#E0F7FA" fill-opacity="0.8" stroke="#FFFFFF" stroke-width="2.5" />
+    <polygon points="-45,-40 -5,-25 -5,15 -45,0" fill="#B2EBF2" fill-opacity="0.6" stroke="#FFFFFF" stroke-width="2" />
+    <polygon points="-5,-25 25,-45 25,-5 -5,15" fill="#80DEEA" fill-opacity="0.6" stroke="#FFFFFF" stroke-width="2" />
+
+    <!-- Ice Cube 2 (Right, Tilted) -->
+    <polygon points="5,-50 35,-65 65,-40 35,-25" fill="#E0F7FA" fill-opacity="0.85" stroke="#FFFFFF" stroke-width="2.5" />
+    <polygon points="5,-50 35,-25 35,10 5,-15" fill="#B2EBF2" fill-opacity="0.65" stroke="#FFFFFF" stroke-width="2" />
+    <polygon points="35,-25 65,-40 65,-5 35,10" fill="#80DEEA" fill-opacity="0.55" stroke="#FFFFFF" stroke-width="2" />
+
+    <!-- Splash Splatters over the Rim -->
+    <path d="M -75 -40 C -85 -65 -60 -85 -45 -65 C -35 -85 -15 -85 -20 -60" fill="url(#liquidGlow)" />
+    <path d="M 40 -50 C 55 -75 75 -75 70 -50 C 85 -70 95 -60 85 -40" fill="url(#liquidGlow)" />
+
+    <!-- Crystal Rim Reflections -->
+    <ellipse cx="0" cy="-80" rx="90" ry="12" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.8" />
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 6. LIQUID SPLASH DROPLETS SCATTERED        -->
+  <!-- ========================================== -->
+  <g id="liquid-droplets" fill="url(#amberGold)">
+    <!-- Around Bottle Mouth -->
+    <circle cx="535" cy="115" r="9" />
+    <circle cx="560" cy="140" r="14" />
+    <circle cx="580" cy="95" r="7" />
+    <circle cx="510" cy="85" r="6" />
+
+    <!-- Along Outer Arc -->
+    <circle cx="765" cy="175" r="11" />
+    <circle cx="830" cy="225" r="13" />
+    <circle cx="895" cy="320" r="16" />
+    <circle cx="918" cy="385" r="11" />
+    <circle cx="928" cy="460" r="14" />
+    <circle cx="905" cy="520" r="17" />
+    <circle cx="880" cy="580" r="12" />
+
+    <!-- Droplet Glints -->
+    <circle cx="893" cy="316" r="4.5" fill="#FFFFFF" />
+    <circle cx="926" cy="456" r="4" fill="#FFFFFF" />
+    <circle cx="558" cy="136" r="4" fill="#FFFFFF" />
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 7. OFFICIAL "DrinkIt" 3D WORDMARK          -->
+  <!-- ========================================== -->
+  <g id="wordmark-drinkit" transform="translate(512, 820)" filter="url(#softShadow)">
+    <!-- Letter "D" -->
+    <g transform="translate(-450, 0)">
+      <!-- Outer D Silhouette -->
+      <path d="M 0 -95 L 90 -95 C 155 -95 195 -60 195 0 C 195 60 155 95 90 95 L 0 95 Z" fill="url(#metallicBlack)" stroke="url(#goldBevel)" stroke-width="7" stroke-linejoin="round" />
+      <!-- D Inner Counter with Splash Pool -->
+      <path d="M 46 -54 L 84 -54 C 118 -54 142 -32 142 0 C 142 32 118 54 84 54 L 46 54 Z" fill="#0C0A09" />
+      <!-- Golden Liquid Splash in Counter -->
+      <path d="M 46 10 C 65 5 95 0 115 15 C 135 30 142 45 130 54 L 46 54 Z" fill="url(#amberGold)" />
+      <!-- Specular Bevel Highlights -->
+      <path d="M 6 -88 L 86 -88 C 142 -88 182 -56 182 0" stroke="#9CA3AF" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.6" />
+    </g>
+
+    <!-- Droplets splashing over the "D" -->
+    <g transform="translate(-450, 0)" fill="url(#amberGold)">
+      <circle cx="165" cy="-80" r="12" />
+      <circle cx="163" cy="-83" r="3.5" fill="#FFFFFF" />
+      <circle cx="210" cy="-40" r="16" />
+      <circle cx="207" cy="-44" r="4.5" fill="#FFFFFF" />
+      <circle cx="205" cy="20" r="10" />
+    </g>
+
+    <!-- Letter "r" -->
+    <g transform="translate(-235, 0)">
+      <path d="M 0 -70 L 46 -70 L 46 -35 C 58 -60 82 -75 115 -72 L 108 -26 C 80 -28 50 -10 46 15 L 46 95 L 0 95 Z" fill="url(#metallicBlack)" stroke="url(#goldBevel)" stroke-width="7" stroke-linejoin="round" />
+      <path d="M 6 -64 L 40 -64 L 40 90" stroke="#9CA3AF" stroke-width="3" fill="none" opacity="0.6" />
+    </g>
+
+    <!-- Letter "i" REPLACED BY MINIATURE WHISKEY BOTTLE -->
+    <g transform="translate(-95, 0)">
+      <!-- Mini Bottle Cap -->
+      <rect x="12" y="-120" width="22" height="18" rx="3" fill="#1C1917" stroke="url(#goldBevel)" stroke-width="2" />
+      <!-- Mini Bottle Neck -->
+      <rect x="15" y="-102" width="16" height="24" fill="url(#deepAmber)" stroke="url(#goldBevel)" stroke-width="2" />
+      <!-- Mini Bottle Body -->
+      <rect x="0" y="-78" width="46" height="173" rx="10" fill="url(#deepAmber)" stroke="url(#goldBevel)" stroke-width="5" />
+      <!-- Mini Bottle Glass Highlight -->
+      <rect x="4" y="-72" width="8" height="160" rx="4" fill="#FFFFFF" opacity="0.4" />
+      <!-- Mini Bottle Label -->
+      <rect x="6" y="-30" width="34" height="80" rx="4" fill="#0C0A09" stroke="#E5A625" stroke-width="2" />
+      <!-- Crown on Mini Bottle Label -->
+      <path d="M 12 18 L 14 6 L 19 13 L 23 3 L 27 13 L 32 6 L 34 18 Z" fill="url(#goldBevel)" />
+      <rect x="12" y="20" width="22" height="3" fill="url(#goldBevel)" />
+    </g>
+
+    <!-- Letter "n" -->
+    <g transform="translate(-30, 0)">
+      <path d="M 0 -70 L 45 -70 L 45 -35 C 60 -60 88 -75 125 -75 C 168 -75 190 -50 190 -5 L 190 95 L 144 95 L 144 5 C 144 -20 130 -35 106 -35 C 80 -35 50 -15 45 15 L 45 95 L 0 95 Z" fill="url(#metallicBlack)" stroke="url(#goldBevel)" stroke-width="7" stroke-linejoin="round" />
+      <path d="M 6 -64 L 40 -64 L 40 90" stroke="#9CA3AF" stroke-width="3" fill="none" opacity="0.6" />
+    </g>
+
+    <!-- Letter "k" -->
+    <g transform="translate(185, 0)">
+      <path d="M 0 -130 L 46 -130 L 46 -5 L 115 -70 L 175 -70 L 98 0 L 180 95 L 122 95 L 60 20 L 46 36 L 46 95 L 0 95 Z" fill="url(#metallicBlack)" stroke="url(#goldBevel)" stroke-width="7" stroke-linejoin="round" />
+      <path d="M 6 -124 L 40 -124 L 40 90" stroke="#9CA3AF" stroke-width="3" fill="none" opacity="0.6" />
+    </g>
+
+    <!-- Letter "t" (Glowing Amber / Fiery Orange) -->
+    <g transform="translate(385, 0)">
+      <path d="M 0 -100 L 46 -100 L 46 -70 L 96 -70 L 96 -30 L 46 -30 L 46 45 C 46 65 56 75 78 75 C 88 75 96 72 104 68 L 104 102 C 90 108 72 112 50 112 C 15 112 0 92 0 52 L 0 -30 L -25 -30 L -25 -70 L 0 -70 Z" fill="url(#orangeTGrad)" stroke="url(#goldBevel)" stroke-width="7" stroke-linejoin="round" />
+      <path d="M 6 -94 L 40 -94 L 40 60" stroke="#FFF9C4" stroke-width="3" fill="none" opacity="0.75" />
+    </g>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- 8. SUBTITLE: "LIQUOR DELIVERY APP"         -->
+  <!-- ========================================== -->
+  <g id="subtitle-tagline" transform="translate(512, 970)">
+    <!-- Left Amber Accent Bar -->
+    <rect x="-420" y="-8" width="95" height="12" rx="6" fill="url(#deepAmber)" />
+    
+    <!-- Tagline Text -->
+    <text x="0" y="5" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="900" letter-spacing="9" fill="#111827" text-anchor="middle">
+      LIQUOR DELIVERY APP
+    </text>
+
+    <!-- Right Amber Accent Bar -->
+    <rect x="325" y="-8" width="95" height="12" rx="6" fill="url(#deepAmber)" />
+  </g>
+</svg>

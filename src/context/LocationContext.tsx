@@ -31,6 +31,15 @@ export interface SavedAddress {
 
 export const POPULAR_LOCATIONS: LocationState[] = [
   {
+    label: 'Lucknow — Hazratganj & Gomti Nagar',
+    addressLine: 'Vipin Khand, Near Riverside Mall, Gomti Nagar, Lucknow',
+    postalCode: '226010',
+    latitude: 26.8500,
+    longitude: 80.9995,
+    city: 'Lucknow',
+    state: 'Uttar Pradesh',
+  },
+  {
     label: 'Noida Sector 18 & Central NCR',
     addressLine: 'Pocket E, Atta Market, Sector 18, Noida',
     postalCode: '201301',
@@ -38,15 +47,6 @@ export const POPULAR_LOCATIONS: LocationState[] = [
     longitude: 77.3271,
     city: 'Noida',
     state: 'Uttar Pradesh',
-  },
-  {
-    label: 'South Delhi — Saket & GK',
-    addressLine: 'Community Centre, Saket District Centre, New Delhi',
-    postalCode: '110017',
-    latitude: 28.5244,
-    longitude: 77.2167,
-    city: 'New Delhi',
-    state: 'Delhi',
   },
   {
     label: 'Central Delhi — Connaught Place',
@@ -58,25 +58,16 @@ export const POPULAR_LOCATIONS: LocationState[] = [
     state: 'Delhi',
   },
   {
-    label: 'Ghaziabad — Indirapuram & Vaishali',
-    addressLine: 'Kala Patthar Road, Nyay Khand 2, Indirapuram, Ghaziabad',
-    postalCode: '201014',
-    latitude: 28.6434,
-    longitude: 77.3704,
-    city: 'Ghaziabad',
-    state: 'Uttar Pradesh',
+    label: 'South Delhi — Saket & GK',
+    addressLine: 'Community Centre, Saket District Centre, New Delhi',
+    postalCode: '110017',
+    latitude: 28.5244,
+    longitude: 77.2167,
+    city: 'South Delhi',
+    state: 'Delhi',
   },
   {
-    label: 'Lucknow — Gomti Nagar Central',
-    addressLine: 'Vipin Khand, Near Riverside Mall, Gomti Nagar, Lucknow',
-    postalCode: '226010',
-    latitude: 26.8500,
-    longitude: 80.9995,
-    city: 'Lucknow',
-    state: 'Uttar Pradesh',
-  },
-  {
-    label: 'Greater Noida — Pari Chowk',
+    label: 'Greater Noida — Pari Chowk & Alpha',
     addressLine: 'Commercial Belt, Alpha 1, Greater Noida',
     postalCode: '201308',
     latitude: 28.4744,
@@ -85,7 +76,16 @@ export const POPULAR_LOCATIONS: LocationState[] = [
     state: 'Uttar Pradesh',
   },
   {
-    label: 'Kanpur — Civil Lines',
+    label: 'Ghaziabad — Indirapuram & Raj Nagar',
+    addressLine: 'Kala Patthar Road, Nyay Khand 2, Indirapuram, Ghaziabad',
+    postalCode: '201014',
+    latitude: 28.6434,
+    longitude: 77.3704,
+    city: 'Ghaziabad',
+    state: 'Uttar Pradesh',
+  },
+  {
+    label: 'Kanpur — Civil Lines & Swaroop Nagar',
     addressLine: 'The Mall Road, Civil Lines, Kanpur',
     postalCode: '208001',
     latitude: 26.4716,
@@ -94,7 +94,7 @@ export const POPULAR_LOCATIONS: LocationState[] = [
     state: 'Uttar Pradesh',
   },
   {
-    label: 'Agra — Tajganj & Sanjay Place',
+    label: 'Agra — Sanjay Place & Tajganj',
     addressLine: 'Fatehabad Road, Tajganj, Agra',
     postalCode: '282001',
     latitude: 27.1610,
@@ -110,6 +110,69 @@ export const POPULAR_LOCATIONS: LocationState[] = [
     longitude: 82.9739,
     city: 'Varanasi',
     state: 'Uttar Pradesh',
+  },
+  {
+    label: 'Prayagraj — Civil Lines & Katra',
+    addressLine: 'MG Marg, Civil Lines, Prayagraj',
+    postalCode: '211001',
+    latitude: 25.4358,
+    longitude: 81.8463,
+    city: 'Prayagraj',
+    state: 'Uttar Pradesh',
+  },
+  {
+    label: 'Meerut — Shastri Nagar & Civil Lines',
+    addressLine: 'Garh Road, Shastri Nagar, Meerut',
+    postalCode: '250004',
+    latitude: 28.9845,
+    longitude: 77.7064,
+    city: 'Meerut',
+    state: 'Uttar Pradesh',
+  },
+  {
+    label: 'Bareilly — Civil Lines & Rampur Garden',
+    addressLine: 'Station Road, Civil Lines, Bareilly',
+    postalCode: '243001',
+    latitude: 28.3670,
+    longitude: 79.4304,
+    city: 'Bareilly',
+    state: 'Uttar Pradesh',
+  },
+  {
+    label: 'Gorakhpur — Golghar & Civil Lines',
+    addressLine: 'Park Road, Golghar, Gorakhpur',
+    postalCode: '273001',
+    latitude: 26.7606,
+    longitude: 83.3732,
+    city: 'Gorakhpur',
+    state: 'Uttar Pradesh',
+  },
+  {
+    label: 'North Delhi — Model Town & Civil Lines',
+    addressLine: 'Mall Road, Model Town, North Delhi',
+    postalCode: '110009',
+    latitude: 28.7041,
+    longitude: 77.1025,
+    city: 'North Delhi',
+    state: 'Delhi',
+  },
+  {
+    label: 'East Delhi — Preet Vihar & Mayur Vihar',
+    addressLine: 'Vikas Marg, Preet Vihar, East Delhi',
+    postalCode: '110092',
+    latitude: 28.6280,
+    longitude: 77.2770,
+    city: 'East Delhi',
+    state: 'Delhi',
+  },
+  {
+    label: 'West Delhi — Rajouri Garden & Punjabi Bagh',
+    addressLine: 'Ring Road, Rajouri Garden, West Delhi',
+    postalCode: '110027',
+    latitude: 28.6692,
+    longitude: 77.1230,
+    city: 'West Delhi',
+    state: 'Delhi',
   },
 ];
 
@@ -179,7 +242,13 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY_LOC);
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed.state && parsed.city && parsed.postalCode) {
+        if (
+          parsed.state &&
+          parsed.city &&
+          parsed.postalCode &&
+          parsed.state !== 'Karnataka' &&
+          parsed.city !== 'Bengaluru'
+        ) {
           return parsed;
         }
       }

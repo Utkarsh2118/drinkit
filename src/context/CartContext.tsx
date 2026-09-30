@@ -14,6 +14,7 @@ interface CartContextType {
   couponCode: string | null;
   appliedCoupon: Coupon | null;
   addItem: (product: Product) => void;
+  addMultipleItems: (itemsToAdd: { product: Product; quantity: number }[]) => void;
   updateQuantity: (productId: string, delta: number) => void;
   removeItem: (productId: string) => void;
   clearCart: () => void;
@@ -83,6 +84,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       }
       return [...prev, { product, quantity: 1 }];
+    });
+  };
+
+  const addMultipleItems = (itemsToAdd: { product: Product; quantity: number }[]) => {
+    setItems(prev => {
+      const current = [...prev];
+      for (const { product, quantity } of itemsToAdd) {
+        const existingIndex = current.findIndex(i => i.product.id === product.id);
+        if (existingIndex > -1) {
+          current[existingIndex] = {
+            ...current[existingIndex],
+            quantity: current[existingIndex].quantity + quantity,
+          };
+        } else {
+          current.push({ product, quantity });
+        }
+      }
+      return current;
     });
   };
 
@@ -171,6 +190,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         couponCode,
         appliedCoupon,
         addItem,
+        addMultipleItems,
         updateQuantity,
         removeItem,
         clearCart,

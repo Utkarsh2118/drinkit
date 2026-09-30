@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   X,
   CheckCircle,
@@ -14,49 +14,54 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertCircle,
+  MapPin,
+  ChevronRight,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { Order, OrderStatus } from '../types.ts';
 import { api } from '../services/api.ts';
 import { InvoiceModal } from './InvoiceModal.tsx';
+import { LiveDeliveryMap } from './LiveDeliveryMap.tsx';
+import { useOrderTracking } from '../services/socketClient.ts';
 
 interface OrderTrackingModalProps {
   orderId: string | null;
   onClose: () => void;
   onOrderUpdated?: () => void;
+  isFullPageView?: boolean;
 }
 
 export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
   orderId,
   onClose,
   onOrderUpdated,
+  isFullPageView = false,
 }) => {
-  const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const {
+    order,
+    status,
+    estimatedDeliveryTime,
+    storeLocation,
+    customerLocation,
+    deliveryPartner,
+    lastKnownLocation,
+    statusTimeline,
+    deliveryOtp,
+    isLiveConnected,
+    isLoading,
+    refetch,
+  } = useOrderTracking(orderId);
+
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [showCancelDialog, setShowCancelDialog] = useState<boolean>(false);
-  const [cancelReasonCategory, setCancelReasonCategory] = useState<'Order placed by mistake' | 'Delivery taking too long' | 'Changed mind' | 'Found better price' | 'Other'>('Order placed by mistake');
+  const [cancelReasonCategory, setCancelReasonCategory] = useState<
+    'Order placed by mistake' | 'Delivery taking too long' | 'Changed mind' | 'Found better price' | 'Other'
+  >('Order placed by mistake');
   const [customExplanation, setCustomExplanation] = useState<string>('');
   const [cancelMessage, setCancelMessage] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState<boolean>(false);
-
-  const fetchOrder = async () => {
-    if (!orderId) return;
-    try {
-      const data = await api.get<Order>(`/orders/${orderId}`);
-      setOrder(data);
-    } catch (e) {
-      console.warn('Could not load order tracking data', e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrder();
-    const interval = setInterval(fetchOrder, 4000); // Poll every 4 seconds for live rider & warehouse updates
-    return () => clearInterval(interval);
-  }, [orderId]);
 
   if (!orderId) return null;
 
@@ -75,7 +80,7 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
 
       setCancelMessage(response.message || 'Order cancelled successfully.');
       setShowCancelDialog(false);
-      await fetchOrder();
+      refetch();
       if (onOrderUpdated) onOrderUpdated();
     } catch (err: any) {
       setCancelError(err.message || 'Could not cancel order.');
@@ -84,362 +89,471 @@ export const OrderTrackingModal: React.FC<OrderTrackingModalProps> = ({
     }
   };
 
-  const steps: { key: OrderStatus; label: string; desc: string; icon: any }[] = [
-    { key: 'PLACED', label: 'Order Placed', desc: 'Payment verified & stock secured', icon: Clock },
-    { key: 'PREPARING', label: 'Packing at Hub', desc: 'Chilled bottles packed & tamper-sealed', icon: Package },
-    { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Rider on the way to your doorstep', icon: Truck },
-    { key: 'DELIVERED', label: 'Delivered', desc: '21+ ID confirmed & handover complete', icon: CheckCircle },
+  // Complete Order Lifecycle Steps as specified in User Request
+  const LIFECYCLE_STEPS: { key: OrderStatus; label: string; desc: string; icon: any }[] = [
+    { key: 'PLACED', label: 'Order Placed', desc: 'Payment verified & stock reserved', icon: Clock },
+    { key: 'CONFIRMED', label: 'Order Confirmed', desc: 'Central routing confirmed', icon: CheckCircle },
+    { key: 'STORE_ACCEPTED', label: 'Store Accepted', desc: 'Dark store accepted ticket', icon: Package },
+    { key: 'PREPARING', label: 'Preparing', desc: 'Chilled bottles being packed', icon: Sparkles },
+    { key: 'READY_FOR_PICKUP', label: 'Ready for Pickup', desc: 'Tamper-sealed at dispatch counter', icon: ShieldCheck },
+    { key: 'ASSIGNED', label: 'Delivery Partner Assigned', desc: 'Speed rider on duty', icon: Truck },
+    { key: 'PICKED_UP', label: 'Picked Up', desc: 'Inspected & secured in carrier', icon: Package },
+    { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Rider en route to your doorstep', icon: NavigationIcon },
+    { key: 'ARRIVING_SOON', label: 'Arriving Soon', desc: 'Within 500m of destination', icon: Zap },
+    { key: 'DELIVERED', label: 'Delivered', desc: 'Doorstep 21+ ID verification complete', icon: CheckCircle2 },
   ];
 
+  // Map status hierarchy
+  const statusLevels: Record<string, number> = {
+    PLACED: 1,
+    CONFIRMED: 2,
+    STORE_ACCEPTED: 3,
+    PREPARING: 4,
+    READY_FOR_PICKUP: 5,
+    ASSIGNED: 6,
+    DELIVERY_ASSIGNED: 6,
+    PICKED_UP: 7,
+    OUT_FOR_DELIVERY: 8,
+    ARRIVING_SOON: 9,
+    DELIVERED: 10,
+  };
+
+  const currentLevel = statusLevels[status] || 1;
+
   const getStepState = (stepKey: OrderStatus) => {
-    if (!order) return 'upcoming';
-    if (order.status === 'CANCELLED') return 'cancelled';
-
-    const orderHierarchy: Record<string, number> = {
-      PLACED: 1,
-      CONFIRMED: 1,
-      PREPARING: 2,
-      READY_FOR_PICKUP: 2,
-      ASSIGNED: 3,
-      OUT_FOR_DELIVERY: 3,
-      DELIVERED: 4,
-    };
-
-    const currentLevel = orderHierarchy[order.status] || 1;
-    const stepLevel = orderHierarchy[stepKey] || 1;
-
+    if (status === 'CANCELLED') return 'cancelled';
+    const stepLevel = statusLevels[stepKey] || 1;
     if (currentLevel > stepLevel) return 'completed';
     if (currentLevel === stepLevel) return 'active';
     return 'upcoming';
   };
 
+  const getStepTimestamp = (stepKey: OrderStatus) => {
+    if (!statusTimeline || statusTimeline.length === 0) return null;
+    const entry = statusTimeline.find(
+      (t: any) =>
+        t.status === stepKey ||
+        (stepKey === 'ASSIGNED' && t.status === 'DELIVERY_ASSIGNED') ||
+        (stepKey === 'DELIVERY_ASSIGNED' && t.status === 'ASSIGNED')
+    );
+    if (!entry || !entry.timestamp) return null;
+    try {
+      const d = new Date(entry.timestamp);
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return null;
+    }
+  };
+
   const canCancel =
     order &&
-    order.status !== 'DELIVERED' &&
-    order.status !== 'CANCELLED' &&
-    order.status !== 'OUT_FOR_DELIVERY';
+    ['PLACED', 'CONFIRMED', 'STORE_ACCEPTED', 'PREPARING'].includes(status) &&
+    status !== 'DELIVERED' &&
+    status !== 'CANCELLED';
 
-  return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-        <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-          {/* Header */}
-          <div className="p-3.5 sm:p-4 border-b border-slate-200 flex items-center justify-between bg-white">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-extrabold text-slate-900 text-sm sm:text-base">Order Details</span>
-                {order && (
-                  <span className="text-xs font-mono font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
-                    {order.orderNumber}
-                  </span>
-                )}
-                {order?.invoiceNumber && (
-                  <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded">
-                    {order.invoiceNumber}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
-                ⚡ ETA: {order?.estimatedDeliveryTime || '20 min'} • {order?.storeName}
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {order && (
-                <button
-                  onClick={() => setShowInvoiceModal(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
-                  title="View Tax Invoice"
-                >
-                  <FileText className="w-3.5 h-3.5 text-emerald-700" />
-                  <span className="hidden sm:inline">Invoice</span>
-                </button>
-              )}
-              <button
-                onClick={fetchOrder}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                title="Refresh status"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+  const modalContent = (
+    <div className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-scale-up">
+      {/* Header Bar */}
+      <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="font-black text-slate-900 text-base sm:text-lg">Order Tracking</span>
+            {order && (
+              <span className="text-xs font-mono font-black bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-lg shadow-2xs">
+                #{order.orderNumber}
+              </span>
+            )}
+            {/* Status Pill */}
+            <span
+              className={`text-[10px] sm:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                status === 'DELIVERED'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                  : status === 'CANCELLED' || status === 'DELIVERY_FAILED'
+                  ? 'bg-rose-100 text-rose-800 border-rose-200'
+                  : status === 'OUT_FOR_DELIVERY' || status === 'ARRIVING_SOON'
+                  ? 'bg-emerald-600 text-white border-emerald-600 animate-pulse'
+                  : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}
+            >
+              {status.replace(/_/g, ' ')}
+            </span>
           </div>
+          <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-2">
+            <span>⚡ Estimated arrival: <strong className="text-slate-900">{estimatedDeliveryTime}</strong></span>
+            {storeLocation && <span>• Hub: {storeLocation.name.split('—')[0]}</span>}
+          </p>
+        </div>
 
-          {/* Modal Body */}
-          <div className="p-3.5 sm:p-5 overflow-y-auto space-y-4 sm:space-y-5 bg-slate-50/50">
-            {isLoading && !order ? (
-              <div className="py-12 text-center text-slate-500 text-xs animate-pulse font-medium">
-                Connecting to DrinkIt Delivery Dispatch Network...
-              </div>
-            ) : order ? (
-              <>
-                {/* Cancelled Alert & Refund Details */}
-                {order.status === 'CANCELLED' && (
-                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2 shadow-xs">
-                    <div className="flex items-center gap-2 text-rose-900 font-extrabold text-xs">
-                      <AlertTriangle className="w-4 h-4 text-rose-600" />
-                      <span>Order Cancelled</span>
+        <div className="flex items-center gap-2">
+          {order && (
+            <button
+              onClick={() => setShowInvoiceModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
+              title="View Excise Tax Invoice"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-700" />
+              <span className="hidden sm:inline">Tax Invoice</span>
+            </button>
+          )}
+          <button
+            onClick={refetch}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            title="Refresh telematics"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            title="Close tracking"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area (Two Columns on Desktop, Single Stack on Mobile) */}
+      <div className="p-4 sm:p-6 overflow-y-auto bg-slate-50/50 flex-1">
+        {isLoading && !order ? (
+          <div className="py-20 text-center text-slate-500 text-xs animate-pulse font-medium">
+            Connecting to DrinkIt Delivery Dispatch Network...
+          </div>
+        ) : order ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* LEFT COLUMN (lg:col-span-7): Status, Steps, Partner, Details */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Delivery OTP Box */}
+              {status !== 'DELIVERED' && status !== 'CANCELLED' && status !== 'DELIVERY_FAILED' && (
+                <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-between shadow-xs">
+                  <div>
+                    <div className="text-[11px] font-black text-emerald-900 uppercase tracking-wider">
+                      Doorstep Verification PIN
                     </div>
-                    {order.cancellationReason && (
-                      <div className="text-[11px] text-rose-800">
-                        Reason: <span className="font-semibold">{order.cancellationReason}</span>
-                      </div>
-                    )}
-                    {order.refundDetails && (
-                      <div className="pt-2 border-t border-rose-200 text-[11px] text-rose-900 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold">Refund Amount:</span>
-                          <span className="font-mono font-black text-xs">₹{order.refundDetails.amount}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Refund Status:</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            {order.refundDetails.status}
-                          </span>
-                        </div>
-                        {order.refundDetails.refundId && (
-                          <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
-                            <span>Ref ID:</span>
-                            <span>{order.refundDetails.refundId}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="text-xs text-emerald-700 mt-0.5 font-medium">
+                      Share this 4-digit code with your rider upon arrival
+                    </div>
                   </div>
-                )}
+                  <div className="text-2xl font-black font-mono tracking-widest text-emerald-950 bg-white px-4 py-2 rounded-2xl border border-emerald-300 shadow-sm">
+                    {deliveryOtp || order.deliveryOtp}
+                  </div>
+                </div>
+              )}
 
-                {/* Delivery OTP Callout Box */}
-                {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
-                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between shadow-xs">
+              {/* Delivery Partner Card */}
+              {deliveryPartner && (
+                <div className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-black text-base shadow-xs">
+                      {deliveryPartner.photo ? (
+                        <img
+                          src={deliveryPartner.photo}
+                          alt={deliveryPartner.name}
+                          className="w-full h-full object-cover rounded-2xl"
+                        />
+                      ) : (
+                        deliveryPartner.name[0]
+                      )}
+                    </div>
                     <div>
-                      <div className="text-[11px] font-extrabold text-emerald-800 uppercase tracking-wider">
-                        Doorstep Verification PIN
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-extrabold text-slate-900">
+                          {deliveryPartner.name}
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 bg-amber-50 text-amber-700 border border-amber-200 rounded">
+                          ★ {deliveryPartner.rating || 4.9}
+                        </span>
                       </div>
-                      <div className="text-xs text-slate-600 mt-0.5">
-                        Share this 4-digit code with your rider upon arrival
+                      <div className="text-[11px] text-slate-500 font-medium">
+                        DrinkIt Speed Fleet Partner • Insulated Backpack
                       </div>
                     </div>
-                    <div className="text-2xl font-black font-mono tracking-widest text-emerald-950 bg-white px-3.5 py-1.5 rounded-xl border border-emerald-300 shadow-xs">
-                      {order.deliveryOtp}
-                    </div>
-                  </div>
-                )}
-
-                {/* Status Stepper */}
-                <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-xs">
-                  <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                    Delivery Timeline
                   </div>
 
-                  <div className="space-y-4">
-                    {steps.map((step, idx) => {
-                      const state = getStepState(step.key);
-                      const Icon = step.icon;
+                  <a
+                    href={`tel:${deliveryPartner.phone}`}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors border border-emerald-200 shadow-2xs"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Call Rider</span>
+                  </a>
+                </div>
+              )}
 
-                      return (
-                        <div key={step.key} className="flex items-start gap-3 relative">
-                          {idx < steps.length - 1 && (
-                            <div
-                              className={`absolute left-4 top-7 bottom-0 w-0.5 -mb-4 ${
-                                state === 'completed' ? 'bg-emerald-600' : 'bg-slate-200'
-                              }`}
-                            />
-                          )}
+              {/* ORDER PROGRESS TIMELINE (Complete 10 Steps with Timestamps) */}
+              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <div className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Order Progress
+                  </div>
+                  <span className="text-[11px] text-emerald-700 font-bold">
+                    {status === 'DELIVERED' ? 'Complete' : 'In Transit'}
+                  </span>
+                </div>
 
+                <div className="space-y-3.5">
+                  {LIFECYCLE_STEPS.map((step, idx) => {
+                    const state = getStepState(step.key);
+                    const timestamp = getStepTimestamp(step.key);
+                    const StepIcon = step.icon;
+
+                    return (
+                      <div key={step.key} className="flex items-start gap-3 relative">
+                        {idx < LIFECYCLE_STEPS.length - 1 && (
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 transition-colors ${
-                              state === 'completed'
-                                ? 'bg-emerald-600 text-white'
-                                : state === 'active'
-                                ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-600'
-                                : 'bg-slate-100 text-slate-400 border border-slate-200'
+                            className={`absolute left-3.5 top-7 bottom-0 w-0.5 -mb-3 transition-colors ${
+                              state === 'completed' ? 'bg-emerald-600' : 'bg-slate-200'
                             }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                          </div>
+                          />
+                        )}
 
-                          <div className="flex-1">
-                            <div
-                              className={`font-bold text-xs ${
+                        <div
+                          className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 z-10 transition-colors ${
+                            state === 'completed'
+                              ? 'bg-emerald-600 text-white shadow-2xs'
+                              : state === 'active'
+                              ? 'bg-emerald-50 text-emerald-700 border-2 border-emerald-600 shadow-xs'
+                              : 'bg-slate-100 text-slate-400 border border-slate-200'
+                          }`}
+                        >
+                          <StepIcon className="w-3.5 h-3.5" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={`text-xs font-bold truncate ${
                                 state === 'active'
-                                  ? 'text-emerald-800'
+                                  ? 'text-emerald-800 font-black'
                                   : state === 'completed'
                                   ? 'text-slate-900'
                                   : 'text-slate-400'
                               }`}
                             >
                               {step.label}
-                            </div>
-                            <div className="text-[11px] text-slate-500">{step.desc}</div>
+                            </span>
+                            {timestamp && (
+                              <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                {timestamp}
+                              </span>
+                            )}
                           </div>
-
-                          {state === 'completed' && (
-                            <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                              Done
-                            </span>
-                          )}
-                          {state === 'active' && (
-                            <span className="text-[10px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded animate-pulse">
-                              In Progress
-                            </span>
-                          )}
+                          <p className="text-[11px] text-slate-500 line-clamp-1">{step.desc}</p>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {state === 'completed' && (
+                          <span className="text-[9px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shrink-0">
+                            ✓ Done
+                          </span>
+                        )}
+                        {state === 'active' && (
+                          <span className="text-[9px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded shrink-0 animate-pulse">
+                            ● Active
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Order Cancellation Action */}
+              {canCancel && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowCancelDialog(true)}
+                    className="w-full py-2.5 rounded-2xl bg-white border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-colors shadow-2xs"
+                  >
+                    Cancel Order
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN (lg:col-span-5): Live Map & Order Summary */}
+            <div className="lg:col-span-5 space-y-4">
+              {/* LIVE DELIVERY MAP */}
+              <div className="space-y-2">
+                <div className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center justify-between">
+                  <span>Live Delivery Map</span>
+                  {isLiveConnected && (
+                    <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      Live GPS Stream
+                    </span>
+                  )}
                 </div>
 
-                {/* Delivery Agent Card */}
-                {order.deliveryAgentName && (
-                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 flex items-center justify-between shadow-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold">
-                        {order.deliveryAgentName[0]}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-slate-900">{order.deliveryAgentName}</div>
-                        <div className="text-[10px] text-slate-500">Assigned DrinkIt Delivery Partner</div>
-                      </div>
-                    </div>
-                    <a
-                      href={`tel:${order.deliveryAgentPhone || '9876543210'}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>Call Rider</span>
-                    </a>
-                  </div>
-                )}
+                <LiveDeliveryMap
+                  status={status}
+                  storeLocation={storeLocation}
+                  customerLocation={customerLocation}
+                  deliveryPartner={deliveryPartner}
+                  lastKnownLocation={lastKnownLocation}
+                  estimatedDeliveryTime={estimatedDeliveryTime}
+                  isLiveConnected={isLiveConnected}
+                />
+              </div>
 
-                {/* Order Items Summary */}
-                <div className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs shadow-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-900">Order Summary ({order.items.length} items)</span>
-                    <button
-                      onClick={() => setShowInvoiceModal(true)}
-                      className="text-emerald-700 font-bold text-[11px] hover:underline flex items-center gap-1"
-                    >
-                      <FileText className="w-3 h-3" />
-                      <span>View Invoice</span>
-                    </button>
-                  </div>
-                  {order.items.map(i => (
-                    <div key={i.productId} className="flex items-center justify-between text-slate-600">
-                      <span className="truncate max-w-[240px]">
-                        {i.quantity}x {i.productName} ({i.volume})
-                      </span>
-                      <span className="font-semibold text-slate-900">₹{i.subtotal}</span>
+              {/* Delivery Address Card */}
+              <div className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-2 text-xs">
+                <div className="text-[11px] font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Delivery Address</span>
+                </div>
+                <div className="font-bold text-slate-900">{customerLocation.label || 'Home'}</div>
+                <p className="text-slate-500 leading-relaxed">{customerLocation.addressLine}</p>
+                {order.deliveryAddress?.phone && (
+                  <div className="text-[11px] text-slate-400">Recipient Contact: {order.deliveryAddress.phone}</div>
+                )}
+              </div>
+
+              {/* Order Summary Card */}
+              <div className="p-4 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-3 text-xs">
+                <div className="text-[11px] font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
+                  Order Summary ({order.items.length} items)
+                </div>
+
+                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-slate-700">
+                      <div className="truncate max-w-[200px]">
+                        <span className="font-bold text-slate-900">{item.quantity}x</span>{' '}
+                        <span>{item.productName}</span>{' '}
+                        <span className="text-[10px] text-slate-400">({item.volume})</span>
+                      </div>
+                      <span className="font-black text-slate-900 shrink-0">₹{item.subtotal}</span>
                     </div>
                   ))}
-                  <div className="pt-2 border-t border-slate-100 flex justify-between font-extrabold text-slate-900 text-sm">
-                    <span>Paid Total ({order.paymentMethod.toUpperCase()})</span>
-                    <span className="font-black text-slate-900">₹{order.totalAmount}</span>
-                  </div>
                 </div>
 
-                {cancelMessage && (
-                  <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-                    {cancelMessage}
+                <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px]">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Subtotal</span>
+                    <span>₹{order.subtotal}</span>
                   </div>
-                )}
-
-                {/* Cancellation Modal / Accordion */}
-                {showCancelDialog ? (
-                  <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-3 shadow-xs animate-fade-in">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-rose-950 text-xs">Confirm Order Cancellation</span>
-                      <button
-                        onClick={() => setShowCancelDialog(false)}
-                        className="text-slate-400 hover:text-slate-600 text-xs"
-                      >
-                        Back
-                      </button>
+                  {order.discount > 0 && (
+                    <div className="flex justify-between text-emerald-700 font-bold">
+                      <span>Discount</span>
+                      <span>-₹{order.discount}</span>
                     </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-bold text-slate-700 block">
-                        Please select a reason:
-                      </label>
-                      <select
-                        value={cancelReasonCategory}
-                        onChange={e => setCancelReasonCategory(e.target.value as any)}
-                        className="w-full p-2 text-xs bg-white border border-rose-200 rounded-xl text-slate-900 focus:border-rose-400"
-                      >
-                        <option value="Order placed by mistake">Order placed by mistake</option>
-                        <option value="Delivery taking too long">Delivery taking too long</option>
-                        <option value="Changed mind">Changed mind</option>
-                        <option value="Found better price">Found better price</option>
-                        <option value="Other">Other reason</option>
-                      </select>
-
-                      <textarea
-                        rows={2}
-                        placeholder="Additional notes (optional)"
-                        value={customExplanation}
-                        onChange={e => setCustomExplanation(e.target.value)}
-                        className="w-full p-2 text-xs bg-white border border-rose-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-rose-400"
-                      />
-                    </div>
-
-                    <div className="text-[10px] text-rose-800 leading-tight">
-                      ✓ A 100% full refund of ₹{order.totalAmount} will be immediately refunded to your original payment method, and items will be restocked to the hub.
-                    </div>
-
-                    {cancelError && (
-                      <div className="text-xs text-rose-700 font-bold">{cancelError}</div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleConfirmCancel}
-                        disabled={isCancelling}
-                        className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition-colors shadow-xs disabled:opacity-50"
-                      >
-                        {isCancelling ? 'Cancelling & Refunding...' : 'Confirm Cancellation & Refund'}
-                      </button>
-                      <button
-                        onClick={() => setShowCancelDialog(false)}
-                        className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors"
-                      >
-                        Keep Order
-                      </button>
-                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-500">
+                    <span>Delivery & Handling</span>
+                    <span>₹{(order.deliveryFee || 0) + (order.handlingFee || 0)}</span>
                   </div>
-                ) : (
-                  canCancel && (
-                    <button
-                      onClick={() => setShowCancelDialog(true)}
-                      className="w-full py-2.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-colors shadow-xs"
-                    >
-                      Cancel Order (100% Instant Refund)
-                    </button>
-                  )
-                )}
-
-                {order.status === 'OUT_FOR_DELIVERY' && (
-                  <div className="text-center text-[11px] text-slate-500 font-medium">
-                    🚴 Rider is en route. Doorstep cancellation is restricted for safety & temperature integrity.
+                  <div className="flex justify-between items-center text-xs font-black text-slate-900 pt-1 border-t border-slate-100">
+                    <span>Total Amount</span>
+                    <span className="text-sm">₹{order.totalAmount}</span>
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="py-8 text-center text-slate-500 text-xs">Order details unavailable.</div>
-            )}
+                  <div className="flex justify-between items-center text-[10px] text-slate-500 pt-0.5">
+                    <span>Payment Method:</span>
+                    <span className="font-bold uppercase text-slate-700">{order.paymentMethod}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        {modalContent}
       </div>
 
-      {/* Invoice Modal */}
-      <InvoiceModal
-        orderId={orderId}
-        isOpen={showInvoiceModal}
-        onClose={() => setShowInvoiceModal(false)}
-      />
+      {/* Invoice Modal Popup */}
+      {showInvoiceModal && order && (
+        <InvoiceModal order={order} onClose={() => setShowInvoiceModal(false)} />
+      )}
+
+      {/* Cancellation Dialog */}
+      {showCancelDialog && (
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-xl text-xs animate-scale-up">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="font-black text-slate-900 text-sm">Cancel Order</div>
+              <button
+                onClick={() => setShowCancelDialog(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-slate-600">
+              Are you sure you want to cancel this order? If paid online, a 100% refund will be processed immediately.
+            </p>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Reason for Cancellation</label>
+              <select
+                value={cancelReasonCategory}
+                onChange={(e: any) => setCancelReasonCategory(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
+              >
+                <option value="Order placed by mistake">Order placed by mistake</option>
+                <option value="Delivery taking too long">Delivery taking too long</option>
+                <option value="Changed mind">Changed mind</option>
+                <option value="Found better price">Found better price</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Details (Optional)</label>
+              <textarea
+                rows={2}
+                placeholder="Help us improve our delivery service..."
+                value={customExplanation}
+                onChange={e => setCustomExplanation(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {cancelError && (
+              <div className="p-2.5 rounded-xl bg-rose-50 text-rose-800 text-xs font-medium">
+                {cancelError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowCancelDialog(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-bold"
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
+
+// Helper component for Navigation Icon
+const NavigationIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polygon points="3 11 22 2 13 21 11 13 3 11" />
+  </svg>
+);

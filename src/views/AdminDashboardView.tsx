@@ -25,6 +25,9 @@ const AnalyticsTab = React.lazy(() =>
 const CouponsTab = React.lazy(() =>
   import('../components/admin/CouponsTab.tsx').then(m => ({ default: m.CouponsTab }))
 );
+const ProductsTab = React.lazy(() =>
+  import('../components/admin/ProductsTab.tsx').then(m => ({ default: m.ProductsTab }))
+);
 
 export const AdminDashboardView: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -176,7 +179,7 @@ export const AdminDashboardView: React.FC = () => {
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Catalog ({products.length})</span>
+            <span>Products ({products.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('compliance')}
@@ -234,166 +237,18 @@ export const AdminDashboardView: React.FC = () => {
         </React.Suspense>
       )}
 
-      {/* Tab 3: Catalog CRUD */}
+      {/* Tab 3: Admin Products & Inventory Management */}
       {activeTab === 'catalog' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
-                Product Catalog Management
-              </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Add, modify or delist drinks and automatically provision micro-warehouse stocks
-              </p>
+        <React.Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-slate-200">
+              <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-xs font-bold text-slate-600">Loading Product Catalog Management...</p>
             </div>
-            <button
-              onClick={() => setShowAddProduct(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Product</span>
-            </button>
-          </div>
-
-          {/* New Product Modal */}
-          {showAddProduct && (
-            <form
-              onSubmit={handleAddProduct}
-              className="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 text-xs shadow-xs"
-            >
-              <div className="font-extrabold text-slate-900 text-sm">Add Product to Catalog</div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Product Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Paul John Nirvana"
-                    value={newProductName}
-                    onChange={e => setNewProductName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Brand Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProductBrand}
-                    onChange={e => setNewProductBrand(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Category</label>
-                  <select
-                    value={newProductCategory}
-                    onChange={e => setNewProductCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  >
-                    <option value="cat_whisky">Whisky</option>
-                    <option value="cat_beer">Beer</option>
-                    <option value="cat_gin">Gin</option>
-                    <option value="cat_vodka">Vodka</option>
-                    <option value="cat_wine">Wine</option>
-                    <option value="cat_mixers">Mixers</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Price (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    value={newProductPrice}
-                    onChange={e => setNewProductPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Volume</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProductVolume}
-                    onChange={e => setNewProductVolume(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">ABV %</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    value={newProductABV}
-                    onChange={e => setNewProductABV(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddProduct(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs transition-colors"
-                >
-                  Save & Provision Stock
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Product Table */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 uppercase font-extrabold border-b border-slate-200">
-                <tr>
-                  <th className="p-3.5">Product</th>
-                  <th className="p-3.5">Category</th>
-                  <th className="p-3.5">Volume</th>
-                  <th className="p-3.5">ABV</th>
-                  <th className="p-3.5">Price</th>
-                  <th className="p-3.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {products.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3.5 flex items-center gap-2.5">
-                      <img src={p.imageUrl} alt={p.name} className="w-8 h-8 object-contain rounded-lg bg-slate-50 border border-slate-100" />
-                      <div>
-                        <div className="font-bold text-slate-900">{p.name}</div>
-                        <div className="text-[10px] text-slate-400 font-medium">{p.brandName}</div>
-                      </div>
-                    </td>
-                    <td className="p-3.5 text-slate-600 font-medium">{p.categoryName}</td>
-                    <td className="p-3.5 text-slate-600 font-medium">{p.volume}</td>
-                    <td className="p-3.5 text-emerald-700 font-extrabold">
-                      {p.isAlcoholic ? `${p.alcoholByVolume}%` : '0%'}
-                    </td>
-                    <td className="p-3.5 font-black text-slate-900">₹{p.price}</td>
-                    <td className="p-3.5 text-right">
-                      <button
-                        onClick={() => handleDeleteProduct(p.id)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-colors"
-                        title="Delete Product"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          }
+        >
+          <ProductsTab stores={stores} onCatalogChanged={fetchAdminData} />
+        </React.Suspense>
       )}
 
       {/* Tab 4: Excise & Compliance */}

@@ -14,6 +14,10 @@ async function startServer() {
   // Initialize secure real-time Socket.IO subsystem
   socketService.init(httpServer);
 
+  // Serve public static assets directly (ensures newly created logo/favicon assets resolve immediately)
+  const publicPath = path.join(process.cwd(), 'public');
+  app.use(express.static(publicPath));
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

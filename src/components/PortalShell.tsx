@@ -86,9 +86,18 @@ export const PortalShell: React.FC<PortalShellProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
           {/* Left: Portal Identity */}
           <div className="flex items-center gap-3">
-            <div className={`px-2.5 py-1 rounded-xl font-black text-xs ${theme.logoBg}`}>
-              DrinkIt
-            </div>
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center focus:outline-none hover:opacity-90 transition-opacity"
+              title="Return to Customer Storefront"
+            >
+              <img
+                src="/images/drinkit-logo.png"
+                alt="DrinkIt — Liquor Delivery App"
+                className="h-9 w-auto max-w-[120px] object-contain drop-shadow-xs"
+                referrerPolicy="no-referrer"
+              />
+            </button>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-sm tracking-tight">{portalTitle}</span>

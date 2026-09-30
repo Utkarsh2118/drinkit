@@ -51,8 +51,13 @@ export const DeliveryLoginView: React.FC = () => {
       {/* Delivery Login Card */}
       <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-3xl p-8 shadow-2xl">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4 shadow-inner">
-            <Truck className="w-7 h-7" />
+          <div className="flex justify-center mb-4">
+            <img
+              src="/images/drinkit-logo.png"
+              alt="DrinkIt — Liquor Delivery App"
+              className="h-16 w-auto max-w-[190px] object-contain drop-shadow-md"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <div className="inline-block px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-2">
             Rider Operations

@@ -109,6 +109,9 @@ export interface Brand {
   description: string;
 }
 
+export type ProductStatus = 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'ARCHIVED';
+export type ProductImageStatus = 'VALID' | 'UNVERIFIED' | 'MISSING_IMAGE' | 'WRONG_IMAGE' | 'BROKEN_IMAGE';
+
 export interface Product {
   id: string;
   name: string;
@@ -124,6 +127,7 @@ export interface Product {
   alcoholByVolume: number; // e.g. 40.0, 5.0, 12.5 (0 for non-alcoholic mixers/snacks)
   isAlcoholic: boolean;
   description: string;
+  shortDescription?: string;
   tastingNotes: string[];
   imageUrl: string;
   country: string;
@@ -133,18 +137,55 @@ export interface Product {
   rating: number;
   reviewCount: number;
   isActive: boolean;
+  status?: ProductStatus;
   stock?: number;
   inStock?: boolean;
   tags?: string[];
   variants?: ProductVariant[];
   imageSource?: string;
   imageVerified?: boolean;
+  imageStatus?: ProductImageStatus;
   imageVerifiedAt?: string;
   priceSource?: string;
   priceVerified?: boolean;
   priceVerifiedAt?: string;
   availableStates?: string[];
+  availableCities?: string[];
   regionalPrices?: RegionalPrice[];
+  sku?: string;
+  barcode?: string;
+  weight?: string;
+  packSize?: string;
+  isArchived?: boolean;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductRequest {
+  id: string;
+  storeId: string;
+  storeName: string;
+  requestedByUserId: string;
+  requestedByUserName: string;
+  productName: string;
+  brandName: string;
+  categoryId: string;
+  categoryName: string;
+  description?: string;
+  variant?: string;
+  volumeOrWeight?: string;
+  imageUrl?: string;
+  suggestedSku?: string;
+  notes?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  adminNotes?: string;
+  reviewedByUserId?: string;
+  reviewedByUserName?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdProductId?: string;
 }
 
 export interface RegionalPrice {
@@ -154,7 +195,7 @@ export interface RegionalPrice {
   mrp?: number;
   currency: string;
   source: string;
-  sourceType: 'official' | 'licensed_retailer' | 'authorized_distributor' | 'secondary_aggregator' | 'development';
+  sourceType: 'official' | 'licensed_retailer' | 'authorized_distributor' | 'secondary_aggregator' | 'development' | 'manufacturer';
   verified: boolean;
   verifiedAt: string;
 }
@@ -188,6 +229,9 @@ export interface StoreInventoryItem {
   reservedQuantity: number;
   availableQuantity?: number;
   lowStockThreshold: number;
+  isAvailable?: boolean;
+  storePrice?: number;
+  deliveryEnabled?: boolean;
   updatedAt: string;
 }
 
@@ -206,13 +250,38 @@ export interface InventoryReservation {
 export type OrderStatus =
   | 'PLACED'
   | 'CONFIRMED'
+  | 'STORE_ACCEPTED'
   | 'PREPARING'
   | 'READY_FOR_PICKUP'
   | 'ASSIGNED'
+  | 'DELIVERY_ASSIGNED'
+  | 'PICKED_UP'
   | 'OUT_FOR_DELIVERY'
+  | 'ARRIVING_SOON'
   | 'DELIVERED'
   | 'CANCELLED'
-  | 'REFUNDED';
+  | 'REFUNDED'
+  | 'PAYMENT_PENDING'
+  | 'PAYMENT_FAILED'
+  | 'DELIVERY_FAILED'
+  | 'REFUND_INITIATED';
+
+export interface OrderStatusHistoryEntry {
+  status: OrderStatus;
+  timestamp: string;
+  note?: string;
+  updatedBy?: string;
+  actorRole?: string;
+}
+
+export interface DeliveryLocation {
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+  speedKmH?: number;
+  heading?: number;
+  accuracy?: number;
+}
 
 export type PaymentState =
   | 'PENDING'
@@ -302,14 +371,16 @@ export interface Order {
   paymentId?: string;
   reservationId?: string;
   status: OrderStatus;
-  statusTimeline: {
-    status: OrderStatus;
-    timestamp: string;
-    note?: string;
-  }[];
+  statusTimeline: OrderStatusHistoryEntry[];
   deliveryAgentId?: string;
   deliveryAgentName?: string;
   deliveryAgentPhone?: string;
+  deliveryPartnerPhoto?: string;
+  deliveryPartnerRating?: number;
+  lastKnownDeliveryLocation?: DeliveryLocation;
+  trackingEnabled?: boolean;
+  failureReason?: string;
+  failureDetails?: string;
   estimatedDeliveryTime: string; // e.g. "20-25 mins"
   deliveryOtp: string; // 4-digit verification code
   ageVerifiedAtDelivery: boolean;

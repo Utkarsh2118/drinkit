@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext.tsx';
 import { useWishlist } from '../context/WishlistContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../services/api.ts';
+import { ProductImage } from './ProductImage.tsx';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -161,7 +162,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             {/* Image & Key Attributes */}
             <div className="relative aspect-square bg-slate-50 rounded-2xl p-6 flex items-center justify-center border border-slate-100">
-              <img src={product.imageUrl} alt={product.name} className="max-h-full max-w-full object-contain" />
+              <ProductImage
+                src={product.imageUrl}
+                alt={product.name}
+                className="max-h-full max-w-full object-contain"
+                categoryName={product.categoryName}
+                isAlcoholic={product.isAlcoholic}
+                imageVerified={product.imageVerified}
+                imageStatus={product.imageStatus}
+              />
               <button
                 onClick={() => toggleWishlist(product)}
                 className="absolute top-3 right-3 p-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-rose-500 transition-colors shadow-xs"
@@ -231,7 +240,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
               {/* Quantity Action */}
               <div className="pt-3">
-                {quantity === 0 ? (
+                {product.inStock === false || product.stock === 0 || product.status === 'OUT_OF_STOCK' ? (
+                  <div className="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 font-bold text-sm text-center select-none">
+                    Currently Out of Stock at this Micro-Warehouse
+                  </div>
+                ) : quantity === 0 ? (
                   <button
                     onClick={() => addItem(product)}
                     className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98"

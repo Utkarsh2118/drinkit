@@ -13,13 +13,15 @@ import {
 } from 'lucide-react';
 import { Order, Store } from '../types.ts';
 import { api } from '../services/api.ts';
+import { useAuth } from '../context/AuthContext.tsx';
+import { StoreInventoryTab } from '../components/store/StoreInventoryTab.tsx';
 
 export const StoreStaffView: React.FC = () => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [storeData, setStoreData] = useState<{ store: Store; inventory: any[] } | null>(null);
   const [activeTab, setActiveTab] = useState<'queue' | 'inventory'>('queue');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const fetchStoreOps = async () => {
@@ -28,7 +30,8 @@ export const StoreStaffView: React.FC = () => {
       const ordersData = await api.get<Order[]>('/orders');
       setOrders(ordersData.filter(o => o.status !== 'DELIVERED' && o.status !== 'CANCELLED'));
 
-      const storeRes = await api.get<{ store: Store; inventory: any[] }>('/stores/store_indiranagar');
+      const targetStoreId = user?.storeId || 'store_noida_sec18';
+      const storeRes = await api.get<{ store: Store; inventory: any[] }>(`/stores/${targetStoreId}`);
       setStoreData(storeRes);
     } catch (e) {
       console.warn('Error loading store staff data', e);
@@ -53,24 +56,6 @@ export const StoreStaffView: React.FC = () => {
       alert(err.message || 'Status update failed');
     }
   };
-
-  const handleAdjustStock = async (productId: string, newQuantity: number) => {
-    try {
-      await api.post('/stores/inventory/adjust', {
-        storeId: 'store_indiranagar',
-        productId,
-        quantity: Math.max(0, newQuantity),
-      });
-      fetchStoreOps();
-    } catch (err: any) {
-      alert(err.message || 'Failed to adjust stock');
-    }
-  };
-
-  const filteredInventory = storeData?.inventory.filter(item =>
-    item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.brandName.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16 animate-fade-in">
@@ -233,83 +218,12 @@ export const StoreStaffView: React.FC = () => {
       )}
 
       {/* Tab 2: Store Inventory */}
-      {activeTab === 'inventory' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <input
-                type="text"
-                placeholder="Search store inventory..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-xs"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            </div>
-            <span className="text-xs text-slate-500 font-medium">
-              Showing {filteredInventory.length} products
-            </span>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 uppercase tracking-wider font-extrabold border-b border-slate-200">
-                <tr>
-                  <th className="p-3.5">Product</th>
-                  <th className="p-3.5">Category</th>
-                  <th className="p-3.5">Price</th>
-                  <th className="p-3.5">Available</th>
-                  <th className="p-3.5">Reserved</th>
-                  <th className="p-3.5 text-right">Adjust Stock</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredInventory.map(item => {
-                  const isLow = item.available <= item.lowStockThreshold;
-                  return (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3.5">
-                        <div className="font-bold text-slate-900">{item.productName}</div>
-                        <div className="text-[10px] text-slate-400 font-medium">{item.brandName}</div>
-                      </td>
-                      <td className="p-3.5 text-slate-600 font-medium">{item.categoryName}</td>
-                      <td className="p-3.5 font-extrabold text-slate-900">₹{item.price}</td>
-                      <td className="p-3.5">
-                        <span
-                          className={`font-black px-2 py-0.5 rounded ${
-                            isLow ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          }`}
-                        >
-                          {item.available} units
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-slate-500 font-medium">{item.reservedQuantity}</td>
-                      <td className="p-3.5 text-right">
-                        <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-1">
-                          <button
-                            onClick={() => handleAdjustStock(item.productId, item.quantity - 5)}
-                            className="p-1 rounded hover:bg-slate-200 text-slate-700 transition-colors"
-                            title="Decrease 5"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="font-mono font-bold text-slate-900 px-1">{item.quantity}</span>
-                          <button
-                            onClick={() => handleAdjustStock(item.productId, item.quantity + 10)}
-                            className="p-1 rounded bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-colors shadow-xs"
-                            title="Add 10"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {activeTab === 'inventory' && storeData && (
+        <StoreInventoryTab
+          store={storeData.store}
+          inventory={storeData.inventory}
+          onInventoryUpdated={fetchStoreOps}
+        />
       )}
     </div>
   );
